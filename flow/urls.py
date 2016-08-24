@@ -15,15 +15,16 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.contrib.auth.views import login
 from .views import get_settings, get_init_data, track, change_settings, push_and_poll, home
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^accounts/login/$', login, {'template_name': 'admin/login.html'}),
     url(r'^$', home, name='home'),
     url(r'^get_initialization_data/$', get_init_data, name='get_init_data'),
     url(r'^metrics/track/$', track, name='track'),
     url(r'^get_settings/$', get_settings, name='get_settings'),
     url(r'^change_settings/$', change_settings, name='change_settings'),
     url(r'^push_and_poll/$', push_and_poll, name='push_and_poll'),
-
 ]
