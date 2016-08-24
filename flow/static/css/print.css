@@ -1,0 +1,98 @@
+.addButton, .button, #header, #share_buttons, #buttonBar, #controls, #itemSelectionControls, .parent > .name, #bottomLinks, #proPitchBottomRight, #getMoreSpaceButtonTopRight, #shared_notice, .pageStar, #savedViewHUD, .edge, .corner, .footer, #fixedPageBottomMessages {
+    display: none !important;
+}
+
+#documentView {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    color:black;
+}
+
+/* Browsers don't print background-images, so we need to insert a
+   "foreground" image for the bullet. Note that I made this use a
+   black bullet (rather than off-black) but it wasn't showing up on
+   the first attempt at printing because the browser hadn't loaded the
+   image from the server yet. So just using normal bullet. */
+.bullet::before {
+    content: url(../i/bullet.svg);
+}
+
+.bullet {
+    /* Don't show .addedShared box shadow */
+    -webkit-box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    box-shadow: none !important;
+}
+
+#pageContainer {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.page {
+    border: none !important;
+
+    /* Add space at top of page so there is some margin. */
+    padding-top: 40px !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+
+    min-height:10px !important;
+    box-shadow:none !important;
+
+    /* Style the page width and margins so that they adjust dynamically
+       depending on width used for printing (and turn off the
+       transform that is normally used for this). We need to use pure
+       CSS for positioning the page when printing (rather than the JS
+       that adjusts things on 'resize' events normally) because we
+       don't know what the print width will be. */
+    width: auto !important;
+    max-width: 700px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    transform: none !important;
+    -webkit-transform: none !important;
+    -moz-transform: none !important;
+    -ms-transform: none !important;
+}
+
+.selected{
+    border-top:none !important;
+}
+
+#site_message{
+    display:none;
+}
+
+.mainTreeRoot{
+    min-height:0px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.children{
+    border-left:none;
+}
+
+.notes > .content{
+    height:auto !important;
+    display: block !important;
+    -webkit-line-clamp: none !important;
+}
+
+.siteSlogan{
+    display:none;
+}
+
+#keyboardShortcutHelper{
+    display:none !important;
+}
+
