@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 import json
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -10,11 +11,13 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from pprint import pprint
 
+@login_required
 def home(request, template="index.html"):
 		return render(request, template)
 
+@login_required
 def get_init_data(request):
-		user = User.objects.first()
+		user = request.user
 		rootProjectChildren = get_tree(user_id=user.id)
 		month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 		month_projects = Project.objects.filter(created__gte=month_start).count()
@@ -61,16 +64,16 @@ def get_init_data(request):
 		return response
 
 @csrf_exempt
+@login_required
 def track(request):
-	print request.POST
 	return JsonResponse({"success": "event tracked"})
 
 @csrf_exempt
+@login_required
 def change_settings(request):
-	user = User.objects.first()
+	user = request.user
 	profile = user.profile
 	data = request.POST
-	print data
 
 	if data.get('saved_views_json_delta'):
 		saved_views_json = profile.saved_views_json or list()
@@ -92,6 +95,7 @@ def change_settings(request):
 
 
 @csrf_exempt
+@login_required
 def push_and_poll(request):
 	post_data = dict(request.POST)
 	pprint(post_data)
@@ -144,9 +148,9 @@ def push_and_poll(request):
 	return JsonResponse({"results": [results]})
 
 
-
+@login_required
 def get_settings(request):
-	user = User.objects.first()
+	user = request.user
 	return JsonResponse({
 		"username": user.username,
 		"theme": user.profile.theme,
