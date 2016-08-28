@@ -1428,36 +1428,36 @@ if (IS_IOS && FULL_OFFLINE_ENABLED) {
     }
   }
 }
-function fetchInitializationData(a, e) {
+function fetchInitializationData(callback, e) {
   if (e === undefined) {
     e = false;
   }
   var j = 5E3;
-  var h = function() {
+  var handleError = function() {
     if (e) {
       setTimeout(l, j);
       j = Math.min(j * 2, 6E5);
     } else {
-      a(null);
+      callback(null);
     }
   };
   var f = typeof PROJECT_TREE_DATA_URL_PARAMS !== "undefined" ? $.extend({}, PROJECT_TREE_DATA_URL_PARAMS) : {};
   f.client_version = !FULL_OFFLINE_ENABLED || IS_PACKAGED_APP ? CLIENT_VERSION : "newest";
-  var n = {
+  var ajaxData = {
     url : "/get_initialization_data?" + $.param(f),
     dataType : "json",
-    success : function(q) {
-      if (q == null) {
-        h();
+    success : function(data) {
+      if (data == null) {
+        handleError();
       } else {
-        q.fetchedWithClientVersion = CLIENT_VERSION;
-        a(q);
+        data.fetchedWithClientVersion = CLIENT_VERSION;
+        callback(data);
       }
     },
-    error : h
+    error : handleError
   };
   var l = function() {
-    $.ajax(n);
+    $.ajax(ajaxData);
   };
   l();
 }
@@ -4630,7 +4630,6 @@ function addGlobalKeyboardShortcuts() {
     return false;
   }));
   h.addHandlerForShortcuts("keydown", "shift+backspace", ["ctrl", "meta"], function() {
-    console.log('delete!')
     deleteItemSelectedProjects();
     return false;
   });
@@ -8533,6 +8532,7 @@ var project_tree_object = function() {
       return t;
     },
     initialize : function(u, b) {
+      console.log('initialize', u)
       if (!("ch" in u)) {
         u.ch = [];
       }
@@ -9792,6 +9792,7 @@ var project_tree = function() {
       }
     },
     initializeProjectTreeSubtree : function(b, s) {
+      console.log(b, 9794)
       var m = project_tree_object.getAddedSubtreeShareId(b);
       if (m === null) {
         project_tree_object.initialize(b, this);
@@ -10105,7 +10106,7 @@ var project_tree = function() {
         s = this.operationRunner.applyOperations([s])[0];
         undo_redo.addOperationToCurrentBatch(s, new v(this.treeId));
       }
-      console.log('this.pendingOperationQueue.append(s)', s)
+      // useful
       this.pendingOperationQueue.append(s);
       push_poll.updateSaveStatus();
       push_poll.scheduleNextPushAndPoll();
@@ -10163,7 +10164,6 @@ var project_tree = function() {
       return this.getPushPollData();
     },
     getPushPollData : function() {
-      // encryption needs to take place in here
       if (!this.pushPollInProgress.getValue()) {
         return null;
       }
@@ -10173,16 +10173,16 @@ var project_tree = function() {
       if (this.mostRecentOperationTransactionIdWhenPushPollInitiated.getValue() !== this.mostRecentOperationTransactionId.getValue()) {
         data.most_recent_operation_transaction_id_when_pushpoll_initiated = this.mostRecentOperationTransactionIdWhenPushPollInitiated.getValue();
       }
-      if (this.inFlightOperationQueue.getLength() > 0) {
-        data.operations = this.inFlightOperationQueue.getList();
-      }
       if (!this.inFlightExpandedProjectsDelta.isEmpty()) {
         data.project_expansions_delta = this.inFlightExpandedProjectsDelta.getDict();
       }
       if (this.isShared()) {
         data.share_id = this.getShareId();
       }
-      console.log(data)
+      if (this.inFlightOperationQueue.getLength() > 0) {
+        var operations = this.inFlightOperationQueue.getList();
+        data.operations = operations;
+      }
       return data;
     },
     resetPushAndPoll : function() {
@@ -10353,7 +10353,7 @@ var project_tree = function() {
     },
     applyLocalEdit : function(project, name, description) {
       // creates edit operation and adds it to pending queue
-      console.log('applyLocalEdit', project, name, description)
+      // useful
       var operation = {
         projectid : project_tree_object.getProjectId(project)
       };
@@ -10935,12 +10935,12 @@ var project_tree = function() {
       }
       f(m, s);
     },
-    initializeProjectTrees : function(b, s) {
+    initializeProjectTrees : function(MAIN_PROJECT_TREE_INFO, s) {
       var m = 0;
       for (;m < s.length;m++) {
         a(s[m], true);
       }
-      m = new x(b, o);
+      m = new x(MAIN_PROJECT_TREE_INFO, o);
       c[o] = m;
       if (TRACK_TAG_COUNTS) {
         e(null);
@@ -11732,7 +11732,7 @@ var operations = function() {
           }
           if (!x) {
             op = addUndoData(op, undo_data);
-            console.log('c', op)
+            // useful
             p.push(op);
           }
         }
@@ -11843,6 +11843,7 @@ var operations = function() {
       },
       createProjects : function(c, g, d, k, p, v) {
         function r(m) {
+          console.log('11846')
           var w = [];
           var t = project_tree_object.getChildren(m);
           if (t !== undefined) {
@@ -12695,7 +12696,7 @@ var push_poll = function() {
         client_id : CLIENT_ID,
         client_version : CLIENT_VERSION,
         push_poll_id : r.getValue(),
-        push_poll_data : JSON.stringify(push_poll_data)
+        // push_poll_data : JSON.stringify(push_poll_data)
       };
       if (project_tree.getMainProjectTree().isShared()) {
         payload.share_id = project_tree.getMainProjectTree().getShareId();
@@ -12711,7 +12712,6 @@ var push_poll = function() {
       }
       var ajaxData = {
         url : "/push_and_poll/",
-        data : payload,
         dataType : "json",
         type : "POST",
         success : function(A) {
@@ -12788,7 +12788,24 @@ var push_poll = function() {
       if (!project_tree.getAllProjectTreesHelper().haveInFlightOperations()) {
         ajaxData.timeout = 3E4;
       }
-      $.ajax(ajaxData);
+
+      /*
+        Encrypt the push_poll_data operations.
+        When complete, do ajax.
+      */
+      if (typeof push_poll_data[0].operations !== "undefined") {
+        PGP.encryptOperations(push_poll_data[0].operations).then(function(operations) {
+          push_poll_data[0].operations = operations;
+          payload.push_poll_data = JSON.stringify(push_poll_data);
+          ajaxData.data = payload;
+          $.ajax(ajaxData);
+        });
+      } else {
+        payload.push_poll_data = JSON.stringify(push_poll_data);
+        ajaxData.data = payload;
+        $.ajax(ajaxData);
+      }
+
     }
   }
   function n() {
@@ -23413,4 +23430,134 @@ var interface_action_handler = function() {
     dispatch : a
   };
 }();
+
+/*
+  Added functionality below:
+*/
+
+var PGP = function() {
+  var PUBLIC_KEY = "-----BEGIN PGP PUBLIC KEY BLOCK-----Version: OpenPGP.js v2.3.3Comment: http://openpgpjs.orgxsBNBFfC18oBCADWfghKiV8IjY+WMCpAClSg2KJYhhyTvEeyWBdpPiGBwD0DVUxad7F/2UJeKe56nTM9C03ZovCT+jpYrTSUvHotaQk+6MhuUbhX3FITzaTpNiz4nUkth5yzH9cIQI9e+4vTOTBCs1qHkgIO1tD0aQyJp1xPvIaEdKoNTKakpV9sYRC4Yx7/Oo13SruAKOJ7mlOO4wRB65uO/7qY1lL5nvjQiEh7jHNzqPsND8cpWQGpEk67o6PcYL0HJsPR+ALl8Te2PGU53YF+ld2Ps8tj0y8icnwC82/p9FxRWzlXxVoFTt5OV59KzXdhp1hmpqq4AOYY4ZpLrIQVYOUiXWalfWnPABEBAAHNG1RvbSA8dG9tZGV2QHByb3Rvbm1haWwuY29tPsLAdQQQAQgAKQUCV8LXzAYLCQcIAwIJECps3dQgdGtHBBUIAgoDFgIBAhkBAhsDAh4BAABU9gf/bRnl5AooZ+Pfu8RqH2GC9Z3N3YveW7m5/liQ78ZlUWV79GEhCSRCDzVlEEqTN1It3LmsdWkWp/Sq7q6uUQjXIP0GZsKpp8dlyhnmoURST0r8maWk6wEYZtbazPedim0cRQwPjBsqeK9sT/8hc5EPu9D+fvg2ZyYCwi/H9G6QDwGCN+slRfLDSnmPv/sOgxkMpEjP8z6o/0Jlr8/fT2xOXwBt74cIqmcz+PCajHFnokIZOn1XlxVcfDkaPHofKyM1296nox9Z8zBxwX5vpzpQFkOyDiknbhngAO+YuOBzy1fmKsMieldDwtYm7awZGP9j6/6I1t9fWQw4+G6MzhdbR87ATQRXwtfKAQgAx9lNG4d9np2ekX3vsrxDMpGYEwrni9RM5sKAKexF5sUc2Xp3atIXZalTjeLoBvmhJ2Zpf4PsBd2o1UAGUWetsYDUlc2VYiwj3rCeIjBuL++v7kd01MPzBD0tqo2sLfyIkyLiGNxAEnNhM5nNctiHTKR8TPPCupTO91NevQqbTmV50++ivnDBo9dfI5OFMiUfyCbuNbOSERCn0OT+LeGAzZaMaZfGzrOlI1Z3DbBgFGwNGjRwEsZltEsh+iIogaqX3puHRgHrx7X9Sotm8n1VdTz4Y9cBFzir5TW8H4qiJFGN2pp/beWy9/B7Zuix8DNLSSbPZdvXaqIfarXoFTFnSQARAQABwsBfBBgBCAATBQJXwtfMCRAqbN3UIHRrRwIbDAAAa/wH/j1qJ6SqUeeJms0EBMmwWcEUAQLoWJnPfAq1c9r1vw2oiqZi1UjJ2RREW6Bv3zCigyoH7GywPUUki55sWsXW5ZhDDJ+v/odE443YTqONU6RMQXUeR/LkpaqbPif4JQGQqKfCQ+zTisGxQPO9aHnuVYyNKKQ7x3mDrXiaECljR3zxSFX7eIi+r7d9RF4P8Ck8ehgR6fc3UJ4F3V1rx6Q4Mvy30YAkFzJBwO9vkhkKyXcKC0vLjB0PuBiGFM+kczk0GSDyJLJJ/JFtvWVL/21uQgiM4BDxTuzvbjoCjCfO5aREU5lMQ7Y2t1mJ/LmmazY3n9I7bXjSqgl8Jgr//+exYfs==mKyS-----END PGP PUBLIC KEY BLOCK-----";
+  var PRIVATE_KEY = "-----BEGIN PGP PRIVATE KEY BLOCK-----Version: OpenPGP.js v2.3.3Comment: http://openpgpjs.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=z5Ll-----END PGP PRIVATE KEY BLOCK-----";
+  var KEY_NAME = 'Tom'
+  var keys = [];
+  function encryptData(data) {
+    if (typeof data == "undefined" || !keys.length) return data
+    var key = keys[0]
+    var options = {
+        data: data,
+        publicKeys: openpgp.key.readArmored(key.pubkey).keys
+    }
+    return openpgp.encrypt(options)
+  }
+  function decryptData(data) {
+    return data
+  }
+  if (jQuery.when.all===undefined) {
+      jQuery.when.all = function(deferreds) {
+          var deferred = new jQuery.Deferred()
+          function toArray(args) {
+              return $.makeArray(args)
+          }
+          $.when.apply(jQuery, deferreds).then(
+              function() {
+                  deferred.resolve(toArray(arguments))
+              },
+              function() {
+                  deferred.reject(toArray(arguments))
+              })
+          return deferred
+      }
+  }
+  function encryptOperations (operations) {
+      var deferreds = []
+      for (var i = 0; i < operations.length; i++) {
+          var op = operations[i]
+          switch (op.type) {
+            case "edit" :
+              var promise = $.Deferred()
+              encryptOp(op).done(function ( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc ) {
+                  // all encryption statements have resolved
+                  // update operation with encrypted data
+                  if (encryptName !== null) {
+                      op.data.name = encryptName
+                  }
+                  if (encryptDesc !== null) {
+                      op.data.description = encryptDesc
+                  }
+                  if (encryptPrevName !== null) {
+                      op.undo_data.previous_name = encryptPrevName
+                  }
+                  if (encryptPrevDesc !== null) {
+                      op.undo_data.previous_description = encryptPrevDesc
+                  }
+                  console.log('completed', i, op)
+                  promise.resolve( op )
+              })
+              deferreds.push(promise)
+              break
+            default :
+              deferreds.push(op)
+              break
+          }
+      }
+      return $.when.all( deferreds )
+  }
+
+  function encryptOp (op) {
+      var encryptName = $.Deferred()
+      var encryptDesc = $.Deferred()
+      var encryptPrevName = $.Deferred()
+      var encryptPrevDesc = $.Deferred()
+
+      var promise = $.when( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc)
+
+      if (typeof op.data.name !== "undefined") {
+        encryptData(op.data.name).then(function(cipher){
+          encryptName.resolve(cipher.data)
+        })
+      } else {
+          encryptName.resolve(null)
+      }
+      if (typeof op.data.description !== "undefined") {
+        encryptData(op.data.description).then(function(cipher){
+          encryptDesc.resolve(cipher.data)
+        })
+      } else {
+          encryptDesc.resolve(null)
+      }
+      if (typeof op.undo_data.previous_name !== "undefined") {
+        encryptData(op.undo_data.previous_name).then(function(cipher){
+          encryptPrevName.resolve(cipher.data)
+        })
+      } else {
+          encryptPrevName.resolve(null)
+      }
+      if (typeof op.undo_data.previous_description !== "undefined") {
+        encryptData(op.undo_data.previous_description).then(function(cipher){
+          encryptPrevDesc.resolve(cipher.data)
+        })
+      } else {
+          encryptPrevDesc.resolve(null)
+      }
+
+      return promise
+  }
+
+  return {
+    init : function () {
+      // openpgp.initWorker("/static/js/openpgp.worker.min.js")
+      openpgp.config.versionstring = ''
+      openpgp.config.commentstring = ''
+      keys.push({
+          name: KEY_NAME,
+          privkey: PUBLIC_KEY,
+          pubkey: PRIVATE_KEY,
+      })
+    },
+    encryptOperations : encryptOperations,
+    encryptData: encryptData,
+  }
+}()
+PGP.init()
+
 allJSFinishedLoadingCallback();
