@@ -10105,6 +10105,7 @@ var project_tree = function() {
         s = this.operationRunner.applyOperations([s])[0];
         undo_redo.addOperationToCurrentBatch(s, new v(this.treeId));
       }
+      console.log('this.pendingOperationQueue.append(s)', s)
       this.pendingOperationQueue.append(s);
       push_poll.updateSaveStatus();
       push_poll.scheduleNextPushAndPoll();
@@ -10162,25 +10163,27 @@ var project_tree = function() {
       return this.getPushPollData();
     },
     getPushPollData : function() {
+      // encryption needs to take place in here
       if (!this.pushPollInProgress.getValue()) {
         return null;
       }
-      var b = {
+      var data = {
         most_recent_operation_transaction_id : this.mostRecentOperationTransactionId.getValue()
       };
       if (this.mostRecentOperationTransactionIdWhenPushPollInitiated.getValue() !== this.mostRecentOperationTransactionId.getValue()) {
-        b.most_recent_operation_transaction_id_when_pushpoll_initiated = this.mostRecentOperationTransactionIdWhenPushPollInitiated.getValue();
+        data.most_recent_operation_transaction_id_when_pushpoll_initiated = this.mostRecentOperationTransactionIdWhenPushPollInitiated.getValue();
       }
       if (this.inFlightOperationQueue.getLength() > 0) {
-        b.operations = this.inFlightOperationQueue.getList();
+        data.operations = this.inFlightOperationQueue.getList();
       }
       if (!this.inFlightExpandedProjectsDelta.isEmpty()) {
-        b.project_expansions_delta = this.inFlightExpandedProjectsDelta.getDict();
+        data.project_expansions_delta = this.inFlightExpandedProjectsDelta.getDict();
       }
       if (this.isShared()) {
-        b.share_id = this.getShareId();
+        data.share_id = this.getShareId();
       }
-      return b;
+      console.log(data)
+      return data;
     },
     resetPushAndPoll : function() {
       this.pushPollInProgress.setValue(false);
@@ -10348,17 +10351,19 @@ var project_tree = function() {
         completed : m
       };
     },
-    applyLocalEdit : function(b, s, m) {
-      b = {
-        projectid : project_tree_object.getProjectId(b)
+    applyLocalEdit : function(project, name, description) {
+      // creates edit operation and adds it to pending queue
+      console.log('applyLocalEdit', project, name, description)
+      var operation = {
+        projectid : project_tree_object.getProjectId(project)
       };
-      if (s !== null) {
-        b.name = s;
+      if (name !== null) {
+        operation.name = name;
       }
-      if (m !== null) {
-        b.description = m;
+      if (description !== null) {
+        operation.description = description;
       }
-      this.applyLocalOperationAndAddToPendingQueue("edit", b);
+      this.applyLocalOperationAndAddToPendingQueue("edit", operation);
     },
     applyLocalCreateChild : function(b, s) {
       // generate unique id for project
@@ -11070,7 +11075,7 @@ var operations = function() {
     c.undo_data = d;
     return c;
   }
-  function j(c, g) {
+  function addUndoData(c, g) {
     var d = utils.deepCopyObject(c);
     d.undo_data = g;
     return d;
@@ -11114,7 +11119,7 @@ var operations = function() {
     }
     return g;
   }
-  function n(c) {
+  function invertLocalOperation(c) {
     var g = o(c, "type");
     var d = o(c, "data");
     var k = o(c, "undo_data");
@@ -11644,7 +11649,7 @@ var operations = function() {
         }
         return false;
       },
-      applyOperations : function(c, g, d, k) {
+      applyOperations : function(operations, g, d, k) {
         if (g === undefined) {
           g = true;
         }
@@ -11656,67 +11661,67 @@ var operations = function() {
         }
         var p = [];
         var v = 0;
-        for (;v < c.length;v++) {
-          var r = c[v];
+        for (;v < operations.length;v++) {
+          var op = operations[v];
           var x = false;
-          var u = null;
+          var undo_data = null;
           try {
-            var b = o(r, "type");
-            var s = o(r, "data");
-            var m = o(r, "client_timestamp");
-            var w = "executed_by" in r ? r.executed_by : null;
-            if ("server_data" in r && ("was_noop" in r.server_data && r.server_data.was_noop)) {
+            var type = o(op, "type");
+            var data = o(op, "data");
+            var timestamp = o(op, "client_timestamp");
+            var executed_by = "executed_by" in op ? op.executed_by : null;
+            if ("server_data" in op && ("was_noop" in op.server_data && op.server_data.was_noop)) {
               continue;
             }
-            utils.debugMessage("apply: " + b);
-            switch(b) {
+            utils.debugMessage("apply: " + type);
+            switch(type) {
               case "edit":
-                u = this.applyEditOperation(s, m, w, k);
+                undo_data = this.applyEditOperation(data, timestamp, executed_by, k);
                 break;
               case "create":
-                u = this.applyCreateOperation(s, m, w, k, d);
+                undo_data = this.applyCreateOperation(data, timestamp, executed_by, k, d);
                 break;
               case "complete":
-                u = this.applyCompleteOperation(s, m, w, k);
+                undo_data = this.applyCompleteOperation(data, timestamp, executed_by, k);
                 break;
               case "uncomplete":
-                u = this.applyUncompleteOperation(s, m, w, k);
+                undo_data = this.applyUncompleteOperation(data, timestamp, executed_by, k);
                 break;
               case "delete":
-                u = this.applyDeleteOperation(s, m, w, k);
+                undo_data = this.applyDeleteOperation(data, timestamp, executed_by, k);
                 break;
               case "undelete":
-                u = this.applyUndeleteOperation(s, m, w, k);
+                undo_data = this.applyUndeleteOperation(data, timestamp, executed_by, k);
                 break;
               case "move":
-                u = this.applyMoveOperation(s, m, w, k);
+                undo_data = this.applyMoveOperation(data, timestamp, executed_by, k);
                 break;
               case "share":
-                u = this.applyShareOperation(s, m, w, k);
+                undo_data = this.applyShareOperation(data, timestamp, executed_by, k);
                 break;
               case "unshare":
-                u = this.applyUnshareOperation(s, m, w, k);
+                undo_data = this.applyUnshareOperation(data, timestamp, executed_by, k);
                 break;
               case "add_shared_email":
-                u = this.applyAddSharedEmailOperation(s, m, w, k);
+                undo_data = this.applyAddSharedEmailOperation(data, timestamp, executed_by, k);
                 break;
               case "remove_shared_email":
-                u = this.applyRemoveSharedEmailOperation(s, m, w, k);
+                undo_data = this.applyRemoveSharedEmailOperation(data, timestamp, executed_by, k);
                 break;
               case "register_shared_email_user":
-                u = this.applyRegisterSharedEmailUserOperation(s, m, w, k);
+                undo_data = this.applyRegisterSharedEmailUserOperation(data, timestamp, executed_by, k);
                 break;
               case "make_shared_subtree_placeholder":
-                u = this.applyMakeSharedSubtreePlaceholderOperation(s, m, w, k);
+                undo_data = this.applyMakeSharedSubtreePlaceholderOperation(data, timestamp, executed_by, k);
                 break;
               case "bulk_create":
-                u = this.applyBulkCreateOperation(s, m, w, k, d);
+                undo_data = this.applyBulkCreateOperation(data, timestamp, executed_by, k, d);
                 break;
               case "bulk_move":
-                u = this.applyBulkMoveOperation(s, m, w, k);
+                undo_data = this.applyBulkMoveOperation(data, timestamp, executed_by, k);
                 break;
               default:
-                throw Error("Unrecognized operation type: '" + b + "'");;
+                throw Error("Unrecognized operation type: '" + type + "'");;
             }
           } catch (t) {
             if (g) {
@@ -11726,8 +11731,9 @@ var operations = function() {
             }
           }
           if (!x) {
-            r = j(r, u);
-            p.push(r);
+            op = addUndoData(op, undo_data);
+            console.log('c', op)
+            p.push(op);
           }
         }
         if (p.length > 0) {
@@ -11735,58 +11741,62 @@ var operations = function() {
         }
         return p;
       },
-      applyEditOperation : function(c, g, d, k) {
-        var p = o(c, "projectid");
-        var v = "name" in c ? c.name : null;
-        c = "description" in c ? c.description : null;
-        var r = this.getProjectTreeObjectByProjectIdOrThrowException(p);
-        if (this.projectTree.isShared() && r === null) {
-          r = this.projectTree.getRootProject();
+      applyEditOperation : function(data, lastModified, d, k) {
+        /*
+        updates the project_tree_object with edited project
+        creates operation which contains previous data
+        */
+        var projectId = o(data, "projectid");
+        var name = "name" in data ? data.name : null;
+        var description = "description" in data ? data.description : null;
+        var project = this.getProjectTreeObjectByProjectIdOrThrowException(projectId);
+        if (this.projectTree.isShared() && project === null) {
+          project = this.projectTree.getRootProject();
         }
-        var x = {
-          previous_last_modified : project_tree_object.getLastModified(r),
-          previous_last_modified_by : project_tree_object.getLastModifiedBy(r)
+        var operation = {
+          previous_last_modified : project_tree_object.getLastModified(project),
+          previous_last_modified_by : project_tree_object.getLastModifiedBy(project)
         };
-        if (v !== null) {
-          x.previous_name = project_tree_object.getName(r);
-          project_tree_object.setName(r, v);
-          project_tree_object.updateNameContentText(r);
+        if (name !== null) {
+          operation.previous_name = project_tree_object.getName(project);
+          project_tree_object.setName(project, name);
+          project_tree_object.updateNameContentText(project);
         }
-        if (c !== null) {
-          x.previous_description = project_tree_object.getNote(r);
-          project_tree_object.setNote(r, c);
-          project_tree_object.updateNoteContentText(r);
+        if (description !== null) {
+          operation.previous_description = project_tree_object.getNote(project);
+          project_tree_object.setNote(project, description);
+          project_tree_object.updateNoteContentText(project);
         }
-        project_tree_object.setLastModified(r, g, d);
-        global_project_tree_object.getTagManager(r).nameOrNoteChanged(k);
+        project_tree_object.setLastModified(project, lastModified, d);
+        global_project_tree_object.getTagManager(project).nameOrNoteChanged(k);
         if (!k) {
-          k = this.projectTree.getProjectReferenceByProjectId(p);
-          g = k.getMatchingDomProject();
-          if (g.length === 1) {
-            d = getCurrentlyFocusedContent();
-            if (v !== null) {
-              p = g.getName().children(".content");
-              if (d === null || d[0] !== p[0]) {
-                p.setContentText(v, false);
+          k = this.projectTree.getProjectReferenceByProjectId(projectId);
+          var dom_project = k.getMatchingDomProject();
+          if (dom_project.length === 1) {
+            var focusedContent = getCurrentlyFocusedContent();
+            if (name !== null) {
+              projectId = dom_project.getName().children(".content");
+              if (focusedContent === null || focusedContent[0] !== projectId[0]) {
+                projectId.setContentText(name, false);
               }
-              if (g.hasClass("selected")) {
+              if (dom_project.hasClass("selected")) {
                 k.setPageTitleForProject();
               }
             }
-            if (c !== null) {
-              v = g.getNotes().children(".content");
-              if (d === null || d[0] !== v[0]) {
-                v.setContentText(c, true);
-                if (c.length > 0) {
-                  g.addClass("noted");
+            if (description !== null) {
+              name = dom_project.getNotes().children(".content");
+              if (focusedContent === null || focusedContent[0] !== name[0]) {
+                name.setContentText(description, true);
+                if (description.length > 0) {
+                  dom_project.addClass("noted");
                 } else {
-                  g.removeClass("noted");
+                  dom_project.removeClass("noted");
                 }
               }
             }
           }
         }
-        return x;
+        return operation;
       },
       applyCreateOperation : function(c, g, d, k, p) {
         if (p === undefined) {
@@ -12427,7 +12437,7 @@ var operations = function() {
     }),
     createOperation : createOperation,
     createOperationWithUndoData : createOperationWithUndoData,
-    invertLocalOperation : n,
+    invertLocalOperation : invertLocalOperation,
     collapseOperationIntoPreviousOperationIfApplicable : function(c, g) {
       if (c.type === "edit" && (g.type === "edit" && c.data.projectid === g.data.projectid)) {
         var d = utils.deepCopyObject(c);
@@ -12577,7 +12587,7 @@ var push_poll = function() {
     w = date_time.convertMillisecondsToTimeDeltaString(w);
     $(".lastSyncedString").text(w);
   }
-  function h(w, t, y, A) {
+  function scheduleNextPushAndPoll(w, t, y, A) {
     if (w === undefined) {
       w = false;
     }
@@ -12640,21 +12650,21 @@ var push_poll = function() {
     } else {
       g = true;
       var w;
-      var t;
+      var push_poll_data;
       if (x) {
         w = project_tree.getAllProjectTreesHelper().haveInFlightOperations();
-        t = project_tree.getAllProjectTreesHelper().getPushPollData();
+        push_poll_data = project_tree.getAllProjectTreesHelper().getPushPollData();
       } else {
         r.setValue(urls.generateUrlSafeRandomString(m));
         w = project_tree.getAllProjectTreesHelper().havePendingOperations();
-        t = project_tree.getAllProjectTreesHelper().beginPushAndPoll();
+        push_poll_data = project_tree.getAllProjectTreesHelper().beginPushAndPoll();
       }
       if (FULL_OFFLINE_ENABLED) {
         setTimeout(updateSaveStatus, 100);
       } else {
         updateSaveStatus();
       }
-      var y = function() {
+      var handleError = function() {
         utils.debugMessage("pushAndPollServer failed. Retrying...");
         c++;
         if (w) {
@@ -12681,27 +12691,27 @@ var push_poll = function() {
           }
         }
       };
-      t = {
+      var payload = {
         client_id : CLIENT_ID,
         client_version : CLIENT_VERSION,
         push_poll_id : r.getValue(),
-        push_poll_data : JSON.stringify(t)
+        push_poll_data : JSON.stringify(push_poll_data)
       };
       if (project_tree.getMainProjectTree().isShared()) {
-        t.share_id = project_tree.getMainProjectTree().getShareId();
+        payload.share_id = project_tree.getMainProjectTree().getShareId();
       }
       if (SEND_TIMEZONE_TO_SERVER) {
-        t.timezone = TIMEZONE_INFO.olson_tz;
+        payload.timezone = TIMEZONE_INFO.olson_tz;
       }
       if (x) {
-        t.is_redo = "true";
+        payload.is_redo = "true";
       }
       if (FULL_OFFLINE_ENABLED) {
-        t.full_offline_enabled = "true";
+        payload.full_offline_enabled = "true";
       }
-      t = {
+      var ajaxData = {
         url : "/push_and_poll/",
-        data : t,
+        data : payload,
         dataType : "json",
         type : "POST",
         success : function(A) {
@@ -12737,7 +12747,7 @@ var push_poll = function() {
             if ("dropdown_message" in z) {
               showMessage(z.dropdown_message, true);
             }
-            h();
+            scheduleNextPushAndPoll();
             if (w) {
               if (!project_tree.getAllProjectTreesHelper().havePendingOperations()) {
                 apphooks.notifyThatAllChangesAreSaved();
@@ -12745,7 +12755,7 @@ var push_poll = function() {
             }
           }
           if (A == null) {
-            y();
+            handleError();
           } else {
             utils.debugMessage("pushAndPollServer succeeded!");
             c = 0;
@@ -12773,12 +12783,12 @@ var push_poll = function() {
             }
           }
         },
-        error : y
+        error : handleError
       };
       if (!project_tree.getAllProjectTreesHelper().haveInFlightOperations()) {
-        t.timeout = 3E4;
+        ajaxData.timeout = 3E4;
       }
-      $.ajax(t);
+      $.ajax(ajaxData);
     }
   }
   function n() {
@@ -12788,7 +12798,7 @@ var push_poll = function() {
       project_tree.getAllProjectTreesHelper().resetPushAndPoll();
     }
     updateSaveStatus();
-    h(false, false, false, true);
+    scheduleNextPushAndPoll(false, false, false, true);
   }
   function l(w, t) {
     utils.debugMessage("getRefreshedProjectTreesAndAddedSharedSubtrees called");
@@ -12893,13 +12903,13 @@ var push_poll = function() {
         n();
       }
     },
-    scheduleNextPushAndPoll : h,
+    scheduleNextPushAndPoll : scheduleNextPushAndPoll,
     pushPollAlreadyScheduled : a,
     scheduleImmediatePollOnNextTick : function() {
       if (v === null) {
         v = setTimeout(function() {
           v = null;
-          h(false, true);
+          scheduleNextPushAndPoll(false, true);
         }, 1);
       }
     }

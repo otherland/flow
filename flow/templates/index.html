@@ -116,7 +116,7 @@
 
     var STRIPE_PUBLIC_KEY = "pk_CmKpB4xe07hPbOxu5RHgJu5kpaStP";
 
-    var LOG_DEBUG_MESSAGES = false;
+    var LOG_DEBUG_MESSAGES = true;
 
     var DEMO_MODE = false;
     var EMBED = false;
@@ -186,7 +186,7 @@
 
   <script src="{% static 'js/react-and-react-dom-15.0.0.min.js' %}" type="text/javascript" ></script>
 
-
+  <script src="{% static 'js/openpgp.min.js' %}" type="text/javascript" ></script>
 
   <script type="text/javascript">
     (function(e,t){var r=e.amplitude||{};var n=t.createElement("script");n.type="text/javascript";
@@ -196,12 +196,9 @@
         for(var o=0;o<i.length;o++){a(i[o])}e.amplitude=r})(window,document);
 
           amplitude.init("b901558d7845aca815d2b136a5bc469b");
-      </script>
+  </script>
 
-
-
-
-      <script src="{% static 'js/document_view.js' %}" type="text/javascript" ></script>
+  <script src="{% static 'js/document_view.js' %}" type="text/javascript" ></script>
 </head>
 
 
