@@ -67,6 +67,9 @@ class UserProfile(models.Model):
 		])
 		user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
 		# referral = models.CharField(default=generate_referral(), max_length=255)
+		public_key = models.TextField(blank=True)
+		private_key = models.TextField(blank=True)
+
 		monthly_item_quota = models.PositiveIntegerField(default=5000)
 		created = models.DateTimeField(auto_now=True)
 		auto_hide_left_bar = models.BooleanField(default=False)
@@ -193,3 +196,8 @@ def update_sibling_priority(sender, instance, **kwargs):
 		# project doesn't exist yet, increment new siblings
 		siblings = siblings.filter(priority__gte=instance.priority)
 		siblings.update(priority=models.F('priority')+1)
+
+@receiver(post_save, sender='auth.User')
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)

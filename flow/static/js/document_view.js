@@ -12566,12 +12566,12 @@ var push_poll = function() {
   function a() {
     return d !== null;
   }
-  function e() {
+  function updateSaveStatus() {
     var w = project_tree.getAllProjectTreesHelper().haveInFlightOperations() || project_tree.getAllProjectTreesHelper().havePendingOperations();
     w = g && k ? "saving" : w ? "saveNow" : "saved";
     $(".saveButton").removeClass("saving saveNow saved").addClass(w);
   }
-  function j() {
+  function updateLastSyncedStrings() {
     var w = project_tree.getAllProjectTreesHelper().getLastPushPollCompleteTimestamp();
     w = date_time.getCurrentTimeInMS() - w;
     w = date_time.convertMillisecondsToTimeDeltaString(w);
@@ -12650,9 +12650,9 @@ var push_poll = function() {
         t = project_tree.getAllProjectTreesHelper().beginPushAndPoll();
       }
       if (FULL_OFFLINE_ENABLED) {
-        setTimeout(e, 100);
+        setTimeout(updateSaveStatus, 100);
       } else {
-        e();
+        updateSaveStatus();
       }
       var y = function() {
         utils.debugMessage("pushAndPollServer failed. Retrying...");
@@ -12718,8 +12718,8 @@ var push_poll = function() {
               G = D.errorEncounteredRunningClientOperationsOnServer;
               B = D.errorEncounteredRunningRemoteOperationsOnClient;
             }
-            e();
-            j();
+            updateSaveStatus();
+            updateLastSyncedStrings();
             if (E) {
               if (G) {
                 showMessage("We're sorry, the server encountered an error while saving your data. Please <a href='#' class='refresh'>reload the page</a> and try again.", true);
@@ -12787,7 +12787,7 @@ var push_poll = function() {
       r.setValue(null);
       project_tree.getAllProjectTreesHelper().resetPushAndPoll();
     }
-    e();
+    updateSaveStatus();
     h(false, false, false, true);
   }
   function l(w, t) {
@@ -12836,8 +12836,8 @@ var push_poll = function() {
   var m = 8;
   return{
     init : function() {
-      e();
-      j();
+      updateSaveStatus();
+      updateLastSyncedStrings();
       r = new userstorage.PersistentValue("pushpoll", "currentId", null);
       var w = project_tree.getAllProjectTreesHelper().pushPollIsInProgress();
       if (w && r.getValue() === null) {
@@ -12864,11 +12864,11 @@ var push_poll = function() {
         p = true;
       }
       setInterval(function() {
-        j();
+        updateLastSyncedStrings();
       }, 6E4);
     },
-    updateSaveStatus : e,
-    updateLastSyncedStrings : j,
+    updateSaveStatus : updateSaveStatus,
+    updateLastSyncedStrings : updateLastSyncedStrings,
     hideOfflineNotice : function() {
       b = true;
       if (s !== null) {
