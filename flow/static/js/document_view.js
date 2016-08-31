@@ -104,215 +104,8 @@ var app_detect = function() {
     }
   };
 }();
-var jstz = {};
-jstz.HEMISPHERE_SOUTH = "SOUTH";
-jstz.HEMISPHERE_NORTH = "NORTH";
-jstz.HEMISPHERE_UNKNOWN = "N/A";
-jstz.olson = {};
-jstz.TimeZone = function(a, e, j) {
-  this.utc_offset = a;
-  this.olson_tz = e;
-  this.uses_dst = j;
-};
-jstz.TimeZone.prototype.display = function() {
-  this.ambiguity_check();
-  var a = "<b>UTC-offset</b>: " + this.utc_offset + "<br/>";
-  a += "<b>Zoneinfo key</b>: " + this.olson_tz + "<br/>";
-  a += "<b>Zone uses DST</b>: " + (this.uses_dst ? "yes" : "no") + "<br/>";
-  return a;
-};
-jstz.TimeZone.prototype.ambiguity_check = function() {
-  var a;
-  var e;
-  var j;
-  var h;
-  a = jstz.olson.ambiguity_list[this.olson_tz];
-  if (typeof a !== "undefined") {
-    e = a.length;
-    j = 0;
-    for (;j < e;j += 1) {
-      h = a[j];
-      if (jstz.date_is_dst(jstz.olson.dst_start_dates[h])) {
-        this.olson_tz = h;
-        break;
-      }
-    }
-  }
-};
-jstz.date_is_dst = function(a) {
-  var e;
-  e = a.getMonth() > 5 ? jstz.get_june_offset() : jstz.get_january_offset();
-  a = jstz.get_date_offset(a);
-  return e - a !== 0;
-};
-jstz.get_date_offset = function(a) {
-  return-a.getTimezoneOffset();
-};
-jstz.get_timezone_info = function() {
-  var a;
-  var e;
-  var j;
-  a = jstz.get_january_offset();
-  e = jstz.get_june_offset();
-  j = a - e;
-  if (j < 0) {
-    return{
-      utc_offset : a,
-      dst : 1,
-      hemisphere : jstz.HEMISPHERE_NORTH
-    };
-  } else {
-    if (j > 0) {
-      return{
-        utc_offset : e,
-        dst : 1,
-        hemisphere : jstz.HEMISPHERE_SOUTH
-      };
-    }
-  }
-  return{
-    utc_offset : a,
-    dst : 0,
-    hemisphere : jstz.HEMISPHERE_UNKNOWN
-  };
-};
-jstz.get_january_offset = function() {
-  return jstz.get_date_offset(new Date(2011, 0, 1, 0, 0, 0, 0));
-};
-jstz.get_june_offset = function() {
-  return jstz.get_date_offset(new Date(2011, 5, 1, 0, 0, 0, 0));
-};
-jstz.determine_timezone = function() {
-  var a;
-  var e;
-  a = jstz.get_timezone_info();
-  e = "";
-  if (a.hemisphere === jstz.HEMISPHERE_SOUTH) {
-    e = ",s";
-  }
-  a = a.utc_offset + "," + a.dst + e;
-  return{
-    timezone : jstz.olson.timezones[a],
-    key : a
-  };
-};
-jstz.olson.timezones = {
-  "-720,0" : new jstz.TimeZone("-12:00", "Etc/GMT+12", false),
-  "-660,0" : new jstz.TimeZone("-11:00", "Pacific/Pago_Pago", false),
-  "-600,1" : new jstz.TimeZone("-11:00", "America/Adak", true),
-  "-660,1,s" : new jstz.TimeZone("-11:00", "Pacific/Apia", true),
-  "-600,0" : new jstz.TimeZone("-10:00", "Pacific/Honolulu", false),
-  "-570,0" : new jstz.TimeZone("-10:30", "Pacific/Marquesas", false),
-  "-540,0" : new jstz.TimeZone("-09:00", "Pacific/Gambier", false),
-  "-540,1" : new jstz.TimeZone("-09:00", "America/Anchorage", true),
-  "-480,1" : new jstz.TimeZone("-08:00", "America/Los_Angeles", true),
-  "-480,0" : new jstz.TimeZone("-08:00", "Pacific/Pitcairn", false),
-  "-420,0" : new jstz.TimeZone("-07:00", "America/Phoenix", false),
-  "-420,1" : new jstz.TimeZone("-07:00", "America/Denver", true),
-  "-360,0" : new jstz.TimeZone("-06:00", "America/Guatemala", false),
-  "-360,1" : new jstz.TimeZone("-06:00", "America/Chicago", true),
-  "-360,1,s" : new jstz.TimeZone("-06:00", "Pacific/Easter", true),
-  "-300,0" : new jstz.TimeZone("-05:00", "America/Bogota", false),
-  "-300,1" : new jstz.TimeZone("-05:00", "America/New_York", true),
-  "-270,0" : new jstz.TimeZone("-04:30", "America/Caracas", false),
-  "-240,1" : new jstz.TimeZone("-04:00", "America/Halifax", true),
-  "-240,0" : new jstz.TimeZone("-04:00", "America/Santo_Domingo", false),
-  "-240,1,s" : new jstz.TimeZone("-04:00", "America/Asuncion", true),
-  "-210,1" : new jstz.TimeZone("-03:30", "America/St_Johns", true),
-  "-180,1" : new jstz.TimeZone("-03:00", "America/Godthab", true),
-  "-180,0" : new jstz.TimeZone("-03:00", "America/Argentina/Buenos_Aires", false),
-  "-180,1,s" : new jstz.TimeZone("-03:00", "America/Montevideo", true),
-  "-120,0" : new jstz.TimeZone("-02:00", "America/Noronha", false),
-  "-120,1" : new jstz.TimeZone("-02:00", "Etc/GMT+2", true),
-  "-60,1" : new jstz.TimeZone("-01:00", "Atlantic/Azores", true),
-  "-60,0" : new jstz.TimeZone("-01:00", "Atlantic/Cape_Verde", false),
-  "0,0" : new jstz.TimeZone("00:00", "Etc/UTC", false),
-  "0,1" : new jstz.TimeZone("00:00", "Europe/London", true),
-  "60,1" : new jstz.TimeZone("+01:00", "Europe/Berlin", true),
-  "60,0" : new jstz.TimeZone("+01:00", "Africa/Lagos", false),
-  "60,1,s" : new jstz.TimeZone("+01:00", "Africa/Windhoek", true),
-  "120,1" : new jstz.TimeZone("+02:00", "Asia/Beirut", true),
-  "120,0" : new jstz.TimeZone("+02:00", "Africa/Johannesburg", false),
-  "180,1" : new jstz.TimeZone("+03:00", "Europe/Moscow", true),
-  "180,0" : new jstz.TimeZone("+03:00", "Asia/Baghdad", false),
-  "210,1" : new jstz.TimeZone("+03:30", "Asia/Tehran", true),
-  "240,0" : new jstz.TimeZone("+04:00", "Asia/Dubai", false),
-  "240,1" : new jstz.TimeZone("+04:00", "Asia/Yerevan", true),
-  "270,0" : new jstz.TimeZone("+04:30", "Asia/Kabul", false),
-  "300,1" : new jstz.TimeZone("+05:00", "Asia/Yekaterinburg", true),
-  "300,0" : new jstz.TimeZone("+05:00", "Asia/Karachi", false),
-  "330,0" : new jstz.TimeZone("+05:30", "Asia/Kolkata", false),
-  "345,0" : new jstz.TimeZone("+05:45", "Asia/Kathmandu", false),
-  "360,0" : new jstz.TimeZone("+06:00", "Asia/Dhaka", false),
-  "360,1" : new jstz.TimeZone("+06:00", "Asia/Omsk", true),
-  "390,0" : new jstz.TimeZone("+06:30", "Asia/Rangoon", false),
-  "420,1" : new jstz.TimeZone("+07:00", "Asia/Krasnoyarsk", true),
-  "420,0" : new jstz.TimeZone("+07:00", "Asia/Jakarta", false),
-  "480,0" : new jstz.TimeZone("+08:00", "Asia/Shanghai", false),
-  "480,1" : new jstz.TimeZone("+08:00", "Asia/Irkutsk", true),
-  "525,0" : new jstz.TimeZone("+08:45", "Australia/Eucla", true),
-  "525,1,s" : new jstz.TimeZone("+08:45", "Australia/Eucla", true),
-  "540,1" : new jstz.TimeZone("+09:00", "Asia/Yakutsk", true),
-  "540,0" : new jstz.TimeZone("+09:00", "Asia/Tokyo", false),
-  "570,0" : new jstz.TimeZone("+09:30", "Australia/Darwin", false),
-  "570,1,s" : new jstz.TimeZone("+09:30", "Australia/Adelaide", true),
-  "600,0" : new jstz.TimeZone("+10:00", "Australia/Brisbane", false),
-  "600,1" : new jstz.TimeZone("+10:00", "Asia/Vladivostok", true),
-  "600,1,s" : new jstz.TimeZone("+10:00", "Australia/Sydney", true),
-  "630,1,s" : new jstz.TimeZone("+10:30", "Australia/Lord_Howe", true),
-  "660,1" : new jstz.TimeZone("+11:00", "Asia/Kamchatka", true),
-  "660,0" : new jstz.TimeZone("+11:00", "Pacific/Noumea", false),
-  "690,0" : new jstz.TimeZone("+11:30", "Pacific/Norfolk", false),
-  "720,1,s" : new jstz.TimeZone("+12:00", "Pacific/Auckland", true),
-  "720,0" : new jstz.TimeZone("+12:00", "Pacific/Tarawa", false),
-  "765,1,s" : new jstz.TimeZone("+12:45", "Pacific/Chatham", true),
-  "780,0" : new jstz.TimeZone("+13:00", "Pacific/Tongatapu", false),
-  "840,0" : new jstz.TimeZone("+14:00", "Pacific/Kiritimati", false)
-};
-jstz.olson.dst_start_dates = {
-  "America/Denver" : new Date(2011, 2, 13, 3, 0, 0, 0),
-  "America/Mazatlan" : new Date(2011, 3, 3, 3, 0, 0, 0),
-  "America/Chicago" : new Date(2011, 2, 13, 3, 0, 0, 0),
-  "America/Mexico_City" : new Date(2011, 3, 3, 3, 0, 0, 0),
-  "Atlantic/Stanley" : new Date(2011, 8, 4, 7, 0, 0, 0),
-  "America/Asuncion" : new Date(2011, 9, 2, 3, 0, 0, 0),
-  "America/Santiago" : new Date(2011, 9, 9, 3, 0, 0, 0),
-  "America/Campo_Grande" : new Date(2011, 9, 16, 5, 0, 0, 0),
-  "America/Montevideo" : new Date(2011, 9, 2, 3, 0, 0, 0),
-  "America/Sao_Paulo" : new Date(2011, 9, 16, 5, 0, 0, 0),
-  "America/Los_Angeles" : new Date(2011, 2, 13, 8, 0, 0, 0),
-  "America/Santa_Isabel" : new Date(2011, 3, 5, 8, 0, 0, 0),
-  "America/Havana" : new Date(2011, 2, 13, 2, 0, 0, 0),
-  "America/New_York" : new Date(2011, 2, 13, 7, 0, 0, 0),
-  "Asia/Gaza" : new Date(2011, 2, 26, 23, 0, 0, 0),
-  "Asia/Beirut" : new Date(2011, 2, 27, 1, 0, 0, 0),
-  "Europe/Minsk" : new Date(2011, 2, 27, 3, 0, 0, 0),
-  "Europe/Istanbul" : new Date(2011, 2, 27, 7, 0, 0, 0),
-  "Asia/Damascus" : new Date(2011, 3, 1, 2, 0, 0, 0),
-  "Asia/Jerusalem" : new Date(2011, 3, 1, 6, 0, 0, 0),
-  "Africa/Cairo" : new Date(2011, 3, 29, 4, 0, 0, 0),
-  "Asia/Yerevan" : new Date(2011, 2, 27, 4, 0, 0, 0),
-  "Asia/Baku" : new Date(2011, 2, 27, 8, 0, 0, 0),
-  "Pacific/Auckland" : new Date(2011, 8, 26, 7, 0, 0, 0),
-  "Pacific/Fiji" : new Date(2010, 11, 29, 23, 0, 0, 0),
-  "America/Halifax" : new Date(2011, 2, 13, 6, 0, 0, 0),
-  "America/Goose_Bay" : new Date(2011, 2, 13, 2, 1, 0, 0),
-  "America/Miquelon" : new Date(2011, 2, 13, 5, 0, 0, 0),
-  "America/Godthab" : new Date(2011, 2, 27, 1, 0, 0, 0)
-};
-jstz.olson.ambiguity_list = {
-  "America/Denver" : ["America/Denver", "America/Mazatlan"],
-  "America/Chicago" : ["America/Chicago", "America/Mexico_City"],
-  "America/Asuncion" : ["Atlantic/Stanley", "America/Asuncion", "America/Santiago", "America/Campo_Grande"],
-  "America/Montevideo" : ["America/Montevideo", "America/Sao_Paulo"],
-  "Asia/Beirut" : ["Asia/Gaza", "Asia/Beirut", "Europe/Minsk", "Europe/Istanbul", "Asia/Damascus", "Asia/Jerusalem", "Africa/Cairo"],
-  "Asia/Yerevan" : ["Asia/Yerevan", "Asia/Baku"],
-  "Pacific/Auckland" : ["Pacific/Auckland", "Pacific/Fiji"],
-  "America/Los_Angeles" : ["America/Los_Angeles", "America/Santa_Isabel"],
-  "America/New_York" : ["America/Havana", "America/New_York"],
-  "America/Halifax" : ["America/Goose_Bay", "America/Halifax"],
-  "America/Godthab" : ["America/Miquelon", "America/Godthab"]
-};
+
+
 (function() {
   function a(j) {
     var h = "    ";
@@ -417,106 +210,6 @@ jstz.olson.ambiguity_list = {
       }
     }
     return o[0] == "\n" ? o.slice(1) : o;
-  };
-  e.prototype.json = function(j, h) {
-    h = h ? h : this.step;
-    if (typeof JSON === "undefined") {
-      return j;
-    }
-    if (typeof j === "string") {
-      return JSON.stringify(JSON.parse(j), null, h);
-    }
-    if (typeof j === "object") {
-      return JSON.stringify(j, null, h);
-    }
-    return j;
-  };
-  e.prototype.css = function(j, h) {
-    var f = j.replace(/\s{1,}/g, " ").replace(/\{/g, "{~::~").replace(/\}/g, "~::~}~::~").replace(/\;/g, ";~::~").replace(/\/\*/g, "~::~/*").replace(/\*\//g, "*/~::~").replace(/~::~\s{0,}~::~/g, "~::~").split("~::~");
-    var n = f.length;
-    var l = 0;
-    var q = "";
-    var o = 0;
-    var c = h ? a(h) : this.shift;
-    o = 0;
-    for (;o < n;o++) {
-      if (/\{/.exec(f[o])) {
-        q += c[l++] + f[o];
-      } else {
-        if (/\}/.exec(f[o])) {
-          q += c[--l] + f[o];
-        } else {
-          /\*\\/.exec(f[o]);
-          q += c[l] + f[o];
-        }
-      }
-    }
-    return q.replace(/^\n{1,}/, "");
-  };
-  e.prototype.sql = function(j, h) {
-    var f = j.replace(/\s{1,}/g, " ").replace(/\'/ig, "~::~'").split("~::~");
-    var n = f.length;
-    var l = [];
-    var q = 0;
-    var o = this.step;
-    var c = 0;
-    var g = "";
-    var d = 0;
-    var k = h ? a(h) : this.shift;
-    d = 0;
-    for (;d < n;d++) {
-      l = d % 2 ? l.concat(f[d]) : l.concat(f[d].replace(/\s{1,}/g, " ").replace(/ AND /ig, "~::~" + o + o + "AND ").replace(/ BETWEEN /ig, "~::~" + o + "BETWEEN ").replace(/ CASE /ig, "~::~" + o + "CASE ").replace(/ ELSE /ig, "~::~" + o + "ELSE ").replace(/ END /ig, "~::~" + o + "END ").replace(/ FROM /ig, "~::~FROM ").replace(/ GROUP\s{1,}BY/ig, "~::~GROUP BY ").replace(/ HAVING /ig,
-      "~::~HAVING ").replace(/ IN /ig, " IN ").replace(/ JOIN /ig, "~::~JOIN ").replace(/ CROSS~::~{1,}JOIN /ig, "~::~CROSS JOIN ").replace(/ INNER~::~{1,}JOIN /ig, "~::~INNER JOIN ").replace(/ LEFT~::~{1,}JOIN /ig, "~::~LEFT JOIN ").replace(/ RIGHT~::~{1,}JOIN /ig, "~::~RIGHT JOIN ").replace(/ ON /ig, "~::~" + o + "ON ").replace(/ OR /ig, "~::~" + o + o + "OR ").replace(/ ORDER\s{1,}BY/ig, "~::~ORDER BY ").replace(/ OVER /ig, "~::~" + o + "OVER ").replace(/\(\s{0,}SELECT /ig,
-      "~::~(SELECT ").replace(/\)\s{0,}SELECT /ig, ")~::~SELECT ").replace(/ THEN /ig, " THEN~::~" + o + "").replace(/ UNION /ig, "~::~UNION~::~").replace(/ USING /ig, "~::~USING ").replace(/ WHEN /ig, "~::~" + o + "WHEN ").replace(/ WHERE /ig, "~::~WHERE ").replace(/ WITH /ig, "~::~WITH ").replace(/ ALL /ig, " ALL ").replace(/ AS /ig, " AS ").replace(/ ASC /ig, " ASC ").replace(/ DESC /ig, " DESC ").replace(/ DISTINCT /ig, " DISTINCT ").replace(/ EXISTS /ig, " EXISTS ").replace(/ NOT /ig,
-      " NOT ").replace(/ NULL /ig, " NULL ").replace(/ LIKE /ig, " LIKE ").replace(/\s{0,}SELECT /ig, "SELECT ").replace(/\s{0,}UPDATE /ig, "UPDATE ").replace(/ SET /ig, " SET ").replace(/~::~{1,}/g, "~::~").split("~::~"));
-    }
-    n = l.length;
-    d = 0;
-    for (;d < n;d++) {
-      c -= l[d].replace(/\(/g, "").length - l[d].replace(/\)/g, "").length;
-      if (/\s{0,}\s{0,}SELECT\s{0,}/.exec(l[d])) {
-        l[d] = l[d].replace(/\,/g, ",\n" + o + o + "");
-      }
-      if (/\s{0,}\s{0,}SET\s{0,}/.exec(l[d])) {
-        l[d] = l[d].replace(/\,/g, ",\n" + o + o + "");
-      }
-      if (/\s{0,}\(\s{0,}SELECT\s{0,}/.exec(l[d])) {
-        q++;
-        g += k[q] + l[d];
-      } else {
-        if (/\'/.exec(l[d])) {
-          if (c < 1) {
-            if (q) {
-              q--;
-            }
-          }
-          g += l[d];
-        } else {
-          g += k[q] + l[d];
-          if (c < 1) {
-            if (q) {
-              q--;
-            }
-          }
-        }
-      }
-    }
-    return g = g.replace(/^\n{1,}/, "").replace(/\n{1,}/g, "\n");
-  };
-  e.prototype.xmlmin = function(j, h) {
-    return(h ? j : j.replace(/\<![ \r\n\t]*(--([^\-]|[\r\n]|-[^\-])*--[ \r\n\t]*)\>/g, "").replace(/[ \r\n\t]{1,}xmlns/g, " xmlns")).replace(/>\s{0,}</g, "><");
-  };
-  e.prototype.jsonmin = function(j) {
-    if (typeof JSON === "undefined") {
-      return j;
-    }
-    return JSON.stringify(JSON.parse(j), null, 0);
-  };
-  e.prototype.cssmin = function(j, h) {
-    return(h ? j : j.replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\//g, "")).replace(/\s{1,}/g, " ").replace(/\{\s{1,}/g, "{").replace(/\}\s{1,}/g, "}").replace(/\;\s{1,}/g, ";").replace(/\/\*\s{1,}/g, "/*").replace(/\*\/\s{1,}/g, "*/");
-  };
-  e.prototype.sqlmin = function(j) {
-    return j.replace(/\s{1,}/g, " ").replace(/\s{1,}\(/, "(").replace(/\s{1,}\)/, ")");
   };
   window.vkbeautify = new e;
 })();
@@ -1377,7 +1070,6 @@ var GLOBAL_NAVIGABLE_PROJECTS_PATTERN = ".page.active " + NAVIGABLE_PROJECTS_PAT
 var DO_NOT_INITIALIZE = false;
 var READY_FOR_DOCUMENT_READY = false;
 var DOCUMENT_READY_TRIGGERED = false;
-var SHOULD_SHOW_LOGIN_REGISTER_SCREEN = false;
 var UPDATE_INITIALIZATION_DATA_EVERY_N_DAYS = 3;
 var PACKAGED_APP_LOGGED_IN_KEY = "logged_in";
 var CONTENT_HTML_CONTAINER = null;
@@ -1401,18 +1093,9 @@ $.ajaxPrefilter(function(a) {
         a.data = "data" in a && (typeof a.data === "string" && a.data.length > 0) ? a.data + "&" + j : j;
       }
     }
-    if (IS_PACKAGED_APP) {
-      if (e) {
-        a.url = URL_PRE_PATH_FOR_PACKAGED_APPS + a.url;
-      }
-    }
   }
 });
-if (IS_PACKAGED_APP) {
-  $.ajax({
-    url : "/ping"
-  });
-}
+
 if (IS_IOS && FULL_OFFLINE_ENABLED) {
   if (!localstorage_detect.localStorageSupported()) {
     if (localstorage_detect.permissionDeniedAccessingLocalStorage()) {
@@ -1472,27 +1155,8 @@ function initializeLocalStorageAndGetInitializationData() {
     }
   }
   WINDOW_ID = date_time.getCurrentTimeInMS() + "-" + Math.random();
-  if (IS_PACKAGED_APP) {
-    indexeddb_helper.open(function() {
-      a();
-      getInitializationDataFromIndexedDB(function(e, j) {
-        if (e === undefined) {
-          indexeddb_helper.getStores().otherData.read(PACKAGED_APP_LOGGED_IN_KEY, function(h) {
-            if (h === true) {
-              doInitializationDataFetch();
-            } else {
-              console.log('Show register login screen')
-            }
-          });
-        } else {
-          initializationDataFetchFinishedCallback(e, j);
-        }
-      });
-    });
-  } else {
-    a();
-    doInitializationDataFetch();
-  }
+  a();
+  doInitializationDataFetch();
 }
 function allJSFinishedLoadingCallback() {
   if (!DO_NOT_INITIALIZE) {
@@ -1537,8 +1201,8 @@ function setupGlobalVariables(a, e) {
     var o = SETTINGS.theme.value;
     var c = SETTINGS.font.value;
     userstorage.init();
-    var g = IS_PACKAGED_APP ? SETTINGS.theme.value : o;
-    var d = IS_PACKAGED_APP ? SETTINGS.font.value : c;
+    var g = o;
+    var d = c;
     j = function(p, v) {
       var r = 0;
       for (;r < p.length;r++) {
@@ -1558,12 +1222,7 @@ function setupGlobalVariables(a, e) {
     handleExceptionDuringInitialization(k);
   }
 }
-function writeInitializationDataToIndexedDB(a) {
-  indexeddb_helper.getStores().initializationData.writeJSONWithTimestamp("initializationData", a);
-}
-function getInitializationDataFromIndexedDB(a) {
-  indexeddb_helper.getStores().initializationData.readJSONWithTimestamp("initializationData", a);
-}
+
 function loadFontAndThemeCSS(a, e) {
   function j() {
     h++;
@@ -1595,7 +1254,8 @@ function documentReadyFunc() {
       }
       $("#documentView").removeAttr("style");
       detectAndSetUpEnvironment();
-      TIMEZONE_INFO = jstz.determine_timezone().timezone;
+      // TIMEZONE_INFO = jstz.determine_timezone().timezone;
+      TIMEZONE_INFO = undefined;
       if (TIMEZONE_INFO === undefined) {
         utils.debugMessage("Failed to detect timezone!");
         SEND_TIMEZONE_TO_SERVER = false;
@@ -1618,11 +1278,7 @@ function documentReadyFunc() {
       initializeShowCompleted();
       selectAndSearchUsingLocation(location_history.getCurrentLocation());
       push_poll.init();
-      if (!IS_MOBILE) {
-        if (FIRST_LOAD_FLAGS.showFriendRecommendation) {
-          friend_recommendation.init();
-        }
-      }
+
       if (!IS_MOBILE) {
         if (FIRST_LOAD_FLAGS.showPrivateSharingNotice) {
           ui_sugar.showAlertDialog("<strong>You are viewing a privately shared WorkFlowy.</strong><br><br>If you would like to add it to your personal account for easy access, click the button below. (Note that this button is always available in the lower right when viewing a shared list.)", "Notice", false, [{
@@ -1655,7 +1311,6 @@ function documentReadyFunc() {
         }, 0);
       }
       apphooks.notifyDocumentReady();
-      event_tracker.track("document_ready");
     }
   }
 }
@@ -1675,14 +1330,10 @@ function handleExceptionDuringInitialization(a) {
     }, 250);
   } else {
     $("#pageContainer").hide();
-    if (IS_PACKAGED_APP) {
-      throw a;
+    if (confirm('WorkFlowy encountered an error initializing.\n\nClick "OK" below to reload the page. If this error happens repeatedly, please email help@workflowy.com with the error message shown below (which you can copy-paste), as well as the name of the browser you are using.\n\nERROR: "' + e + '"\n\n(This error is usually caused by browser extensions, so we recommend checking if disabling any that you have installed solves the problem.)')) {
+      setTimeout(reloadPageFromServer, 250);
     } else {
-      if (confirm('WorkFlowy encountered an error initializing.\n\nClick "OK" below to reload the page. If this error happens repeatedly, please email help@workflowy.com with the error message shown below (which you can copy-paste), as well as the name of the browser you are using.\n\nERROR: "' + e + '"\n\n(This error is usually caused by browser extensions, so we recommend checking if disabling any that you have installed solves the problem.)')) {
-        setTimeout(reloadPageFromServer, 250);
-      } else {
-        throw a;
-      }
+      throw a;
     }
   }
 }
@@ -1924,10 +1575,6 @@ jQuery.fn.selectIt = function(a, e) {
   e = animations.getAnimationSpeed(e);
   var j = $(this);
   var h = project_tree.getProjectReferenceFromDomProject(j);
-  event_tracker.recordAction({
-    type : "ZOOM",
-    payload : h.projectid
-  });
   hideControls();
   if (!j.is(".selected")) {
     var f = selectOnActivePage(".selected");
@@ -2100,11 +1747,6 @@ jQuery.fn.selectIt = function(a, e) {
         }, animations.getAnimationTiming("zoom"), function() {
           animations.getAnimationCounter().decrement();
         });
-      }
-      if (j.is(".parent")) {
-        event_tracker.track("zoom--out");
-      } else {
-        event_tracker.track("zoom--in");
       }
       n = j.find(".parent");
       if (j.is(".parent")) {
@@ -2376,7 +2018,6 @@ function toggleCompletedVisibility() {
   } else {
     showCompleted();
   }
-  settings.saveShowCompleted(shouldShowCompletedProjects());
 }
 jQuery.fn.getLastSavedContentText = function() {
   var a = $(this);
@@ -2511,7 +2152,6 @@ jQuery.fn.updateContentHtmlAfterUserEdit = function() {
       }
     }
   }
-  event_tracker.track("edit");
 };
 function addEvents() {
   $(".dialogCloseButton").live("click", function() {
@@ -2520,15 +2160,13 @@ function addEvents() {
   $("#site_message .closeButton").click(function() {
     $("#site_message").slideUp();
   });
-  if (!IS_PACKAGED_APP && !DEMO_MODE) {
-    window.onbeforeunload = function() {
-      saveEditingContent();
-      if (project_tree.getAllProjectTreesHelper().haveUnsavedData()) {
-        push_poll.scheduleNextPushAndPoll(true);
-        return "You have unsaved changes. Do you want to leave this page and discard your changes?";
-      }
-    };
-  }
+  window.onbeforeunload = function() {
+    saveEditingContent();
+    if (project_tree.getAllProjectTreesHelper().haveUnsavedData()) {
+      push_poll.scheduleNextPushAndPoll(true);
+      return "You have unsaved changes. Do you want to leave this page and discard your changes?";
+    }
+  };
   window.onerror = function(h, f, n) {
     if (IS_CHROME_APP) {
       gaTracker.sendEvent("[Chrome App] Javascript Errors", h, SETTINGS.username.value + ": " + f + ":" + n);
@@ -2543,12 +2181,10 @@ function addEvents() {
     item_select.notifyWindowResized();
     left_bar.notifyMayNeedToUpdate();
   });
-  if (!IS_PACKAGED_APP) {
-    $.address.externalChange(function() {
-      location_history.notifyExternalFragmentChange();
-      selectAndSearchUsingLocation(location_history.getCurrentLocation());
-    });
-  }
+  $.address.externalChange(function() {
+    location_history.notifyExternalFragmentChange();
+    selectAndSearchUsingLocation(location_history.getCurrentLocation());
+  });
   if (IS_ANDROID) {
     if ("hidden" in document) {
       var a = "hidden";
@@ -2641,7 +2277,6 @@ function addEvents() {
     });
     $("#controlsLeft > .complete").click(function() {
       $(this).getProject().completeIt();
-      event_tracker.track("completed");
     });
     $("#controlsLeft > .share").click(function() {
       $(this).getProject().showSharePopup();
@@ -2777,7 +2412,6 @@ function addEvents() {
       });
       q.addClass("hovered");
     }
-    event_tracker.track("bullet-menu--opened");
   };
   if (IS_MOBILE) {
     $("body").bind("touchstart", function(h) {
@@ -2956,7 +2590,6 @@ function addEvents() {
       } else {
         f();
       }
-      event_tracker.track("tag--clicked");
       return false;
     }
   });
@@ -2988,19 +2621,10 @@ function addEvents() {
         var q = l(n);
         h = q[0];
         q = q[1];
-        if (IS_PACKAGED_APP) {
-          if (h.match("^https://.*workflowy.com/$") !== null) {
-            f = location_history.getLocationFromFragment(q);
-            location_history.notifyLocationChange(f);
-            selectAndSearchUsingLocation(f);
-            return false;
-          }
-        } else {
-          l = l(window.location.href)[0];
-          if (h === l) {
-            window.location.href = n;
-            return false;
-          }
+        l = l(window.location.href)[0];
+        if (h === l) {
+          window.location.href = n;
+          return false;
         }
       }
       if (f.is(".contentLink--image")) {
@@ -3245,20 +2869,7 @@ function addEvents() {
   }
   addContentInteractionEventHandlers($(".page.active .selected .content"));
   addGlobalKeyboardShortcuts();
-  $("#loginPopup").dialog({
-    autoOpen : false,
-    width : 450,
-    buttons : {
-      Login : function() {
-        $("#loginPopup form").submit();
-      }
-    },
-    modal : true,
-    position : ["center", 180],
-    title : "Login required for " + html_utils.htmlEscapeText(SETTINGS.email.value),
-    dialogClass : "noClose",
-    closeOnEscape : false
-  });
+
   $("#exportPopup").dialog({
     autoOpen : false,
     width : 550,
@@ -3284,14 +2895,6 @@ function addEvents() {
   $(".ui-dialog-titlebar-close").live("mousedown", function() {
     return false;
   });
-  $("#settingsButton").clickOrTapHandler({
-    useBind : true,
-    event : function() {
-      settings.toggleSettingsDialogVisibility();
-      settings.hideMenu();
-      return false;
-    }
-  });
   e = $("#reloadAppCacheButton");
   if (e.length === 1) {
     e.clickOrTapHandler({
@@ -3301,68 +2904,8 @@ function addEvents() {
       }
     });
   }
-  $(".logout").clickOrTapHandler({
-    event : function() {
-      if (project_tree.getAllProjectTreesHelper().haveUnsavedData()) {
-        ui_sugar.showAlertDialog("<strong>You have unsaved changes.</strong> If you sign out now before saving them, they will be lost.", "Warning", true, [{
-          text : "Sign out now",
-          click : function() {
-            if (!IS_PACKAGED_APP) {
-              window.onbeforeunload = null;
-            }
-            logoutUser();
-          }
-        }], "Cancel");
-      } else {
-        logoutUser();
-      }
-      return false;
-    }
-  });
-  $("#loginPopupContents .loginForm").submit(function() {
-    var h = $(this);
-    var f = $("#loginPopup");
-    if (h.hasClass("submitting")) {
-      return false;
-    }
-    h.addClass("submitting");
-    f.setDialogButtonsDisable(true);
-    var n = {};
-    h.find(":input").each(function() {
-      n[$(this).attr("name")] = $(this).val();
-    });
-    var l = function() {
-      h.removeClass("submitting");
-      f.setDialogButtonsDisable(false);
-      h.find(".loginFormErrorMessage").text("Server did not respond. Please try again.").show();
-      h.find(".loginFormPasswordInput").focus();
-    };
-    $.ajax({
-      url : "/ajax_login",
-      data : n,
-      dataType : "json",
-      type : "POST",
-      success : function(q) {
-        if (q == null) {
-          l();
-        } else {
-          if ("success" in q && q.success) {
-            hideLoginPopup();
-            push_poll.notifyAjaxLoginComplete();
-          } else {
-            h.removeClass("submitting");
-            f.setDialogButtonsDisable(false);
-            h.find(".loginFormErrorMessage").text("Incorrect password.").show();
-            q = h.find(".loginFormPasswordInput");
-            q.val("");
-            q.focus();
-          }
-        }
-      },
-      error : l
-    });
-    return false;
-  });
+
+
   $("#exportAllButton").click(function() {
     $(".page.active .mainTreeRoot").exportIt(true);
     return false;
@@ -3382,15 +2925,25 @@ function addEvents() {
     position : ["center", 200],
     title : "Add shared list"
   });
-  if (APPCACHE_ENABLED) {
-    appcache_helper.init();
-  }
+
   search.init();
   moving.init();
   item_select.init();
-  keyboard_shortcut_helper.init();
   sharing.init();
-  settings.init();
+
+  (function(){
+    $.ajax({
+      url : "/get_settings",
+      dataType : "json",
+      success : function(g) {
+        if (g != null) {
+          if (userstorage.isEnabled()) {
+            userstorage.updateSettingsFromServer(g);
+          }
+        }
+      }
+    });
+  })()
   undo_redo.init();
   exporting.init();
   saved_views.init();
@@ -3422,26 +2975,6 @@ function clearUserStorage(a) {
     userstorage.clear(a);
   } else {
     a();
-  }
-}
-function logoutUser() {
-  if (IS_PACKAGED_APP) {
-    $.ajax({
-      url : "/ajax_logout",
-      dataType : "json",
-      type : "POST",
-      success : function() {
-        clearUserStorage(function() {
-          indexeddb_helper.getStores().otherData.remove(PACKAGED_APP_LOGGED_IN_KEY, function() {
-            reloadPackagedApp();
-          });
-        });
-      }
-    });
-  } else {
-    clearUserStorage();
-    apphooks.notifyThatAppCacheIsNowUncached();
-    window.location = "/offline_logout";
   }
 }
 jQuery.fn.findCaretPositionForTouch = function(a, e) {
@@ -3568,14 +3101,12 @@ jQuery.fn.clickExpandButton = function(a, e) {
       }
       if (f) {
         h.hideChildren().setExpanded(false);
-        event_tracker.track("collapse");
       } else {
         if (search.inSearchMode()) {
           f = project_tree.getProjectReferenceFromDomProject(h);
           search.registerFullyExpandedItemForCurrentSearch(f);
         }
         h.showChildren().setExpanded(true);
-        event_tracker.track("expand");
       }
     }
   }
@@ -4325,14 +3856,6 @@ function addGlobalKeyboardShortcuts() {
     search.searchToggleShortcutHandler();
     return false;
   });
-  h.addHandlerForShortcuts("keydown", "shift+/", ["ctrl", "meta"], function() {
-    keyboard_shortcut_helper.toggle();
-    return false;
-  });
-  h.addHandlerForShortcuts("keydown", "/", ["ctrl", "meta"], function() {
-    keyboard_shortcut_helper.toggle();
-    return false;
-  });
   h.addHandlerForShortcuts("keydown", "shift+*", ["ctrl", "meta"], function() {
     saved_views.toggleCurrentViewSaved();
     if (!left_bar.isEnabled()) {
@@ -4462,22 +3985,7 @@ function addGlobalKeyboardShortcuts() {
     e(g);
     return false;
   });
-  if (IS_CHROME_APP) {
-    h.addHandlerForShortcuts("keydown", "[", ["ctrl", "meta"], function() {
-      location_history.navigateBackward();
-    });
-    h.addHandlerForShortcuts("keydown", "]", ["ctrl", "meta"], function() {
-      location_history.navigateForward();
-    });
-  }
-  if (APPCACHE_ENABLED) {
-    if (ON_DEVELOPMENT_SERVER) {
-      h.addHandlerForShortcuts("keydown", "shift+a", ["ctrl", "meta"], function() {
-        forceReloadAppCache();
-        return false;
-      });
-    }
-  }
+
   h.addHandlerForShortcuts("keydown", "return", ["ctrl", "meta"], createDoNothingWhenInLeftBarRecentSwitcherModeShortcutEventHandler(function() {
     completeItemSelectedProjects();
     return false;
@@ -5220,9 +4728,6 @@ jQuery.fn.indentProjects = function(a) {
     }
     undo_redo.finishOperationBatch();
   }
-  if (!l) {
-    event_tracker.track("indent");
-  }
   return!l;
 };
 jQuery.fn.splitIntoAdjacentProjectGroups = function() {
@@ -5306,9 +4811,6 @@ jQuery.fn.outdentProjects = function(a) {
       }
     }
     undo_redo.finishOperationBatch();
-  }
-  if (!l) {
-    event_tracker.track("outdent");
   }
   return!l;
 };
@@ -5763,19 +5265,7 @@ jQuery.fn.duplicateIt = function(a, e) {
     return this;
   }
 };
-function showLoginPopup() {
-  closeAllDialogs();
-  var a = $("#loginPopup");
-  a.append($("#loginPopupContents").children().clone(true));
-  a.setDialogButtonsDisable(false);
-  a.dialog("open");
-  a.find(".loginFormPasswordInput").focus();
-}
-function hideLoginPopup() {
-  var a = $("#loginPopup");
-  a.html("");
-  a.dialog("close");
-}
+
 function closeAllDialogs() {
   $(".ui-dialog:visible > .ui-dialog-content").dialog("close");
 }
@@ -5907,26 +5397,7 @@ function refreshVisibleChildrenUnderSelectedForAddButton(a) {
   }
 }
 function reloadPageFromServer() {
-  if (IS_PACKAGED_APP) {
-    reloadPackagedApp();
-  } else {
-    if (APPCACHE_ENABLED) {
-      forceReloadAppCache();
-    } else {
-      window.location.reload(true);
-    }
-  }
-}
-function reloadPackagedApp() {
-  indexeddb_helper.getStores().initializationData.clear(function() {
-    if (IS_CHROME_APP) {
-      chrome.runtime.reload();
-    } else {
-      if (IS_ANDROID_APP) {
-        androidInterface.reload();
-      }
-    }
-  });
+    window.location.reload(true);
 }
 function forceReloadAppCache() {
   if (localstorage_helper.localStorageSupported()) {
@@ -5946,81 +5417,6 @@ function checkIfMostRecentlyOpenedWindowIdChanged() {
     }
   }
 }
-var event_tracker = function() {
-  function a(n) {
-    if (f) {
-      n.meta = {
-        timestamp : (new Date).getTime()
-      };
-      h.push(n);
-    }
-  }
-  function e(n) {
-    n = _.chain(n).filter(function(q) {
-      q = q.type;
-      return q === "EXPAND" || q === "COLLAPSE";
-    }).reduceRight(function(q, o) {
-      q[o.payload] = o.type === "EXPAND" ? false : true;
-      return q;
-    }, {}).value();
-    var l = project_tree.getAllProjectTreesHelper();
-    _.each(n, function(q, o) {
-      l.findProjectByProjectId(o).setExpanded(q);
-    });
-  }
-  function j(n) {
-    var l;
-    _.each(n, function(q) {
-      if (q.type === "START_RECORDING") {
-        l = q.meta.timestamp;
-      }
-      setTimeout(function() {
-        interface_action_handler.dispatch(q);
-      }, q.meta.timestamp - l);
-    });
-  }
-  var h = [];
-  var f = false;
-  return{
-    track : function(n) {
-      if (EMBED) {
-        if (parent !== window) {
-          if (parent.handleWorkFlowyEvent !== undefined) {
-            parent.handleWorkFlowyEvent(n);
-          }
-        }
-      }
-    },
-    recordAction : a,
-    getActionHistory : function() {
-      return h;
-    },
-    startRecording : function() {
-      f = true;
-      var n = location_history.getCurrentLocation()._zoomedProjectId;
-      a({
-        type : "START_RECORDING",
-        payload : {
-          zoomedProjectId : n
-        }
-      });
-    },
-    stopRecording : function() {
-      a({
-        type : "STOP_RECORDING"
-      });
-      f = false;
-    },
-    replayHistory : function() {
-      var n = h;
-      e(n);
-      j(n);
-    },
-    clearHistory : function() {
-      h = [];
-    }
-  };
-}();
 var localstorage_helper = function() {
   function a(q) {
     return n.getItem(q);
@@ -6053,35 +5449,28 @@ var localstorage_helper = function() {
   var l = null;
   return{
     init : function() {
-      if (IS_PACKAGED_APP) {
-        l = true;
-        f = false;
-        n = indexeddb_helper.getLocalStorageAdapter();
-      } else {
-        l = localstorage_detect.localStorageSupported();
-        f = true;
-        n = window.localStorage;
-        if (!l) {
-          return;
-        }
+      l = localstorage_detect.localStorageSupported();
+      f = true;
+      n = window.localStorage;
+      if (!l) {
+        return;
       }
-      if (!IS_PACKAGED_APP) {
-        $(window).bind("storage", function(q) {
-          if ("originalEvent" in q && "key" in q.originalEvent) {
-            q = q.originalEvent.key;
-            if (q === MOST_RECENTLY_OPENED_WINDOW_ID_KEY) {
-              checkIfMostRecentlyOpenedWindowIdChanged();
-            } else {
-              if (userstorage.isEnabled()) {
-                if (userstorage.isUserStorageKey(q)) {
-                  q = userstorage.stripKeyPrefix(q);
-                  userstorage.notifyChange(q);
-                }
+
+      $(window).bind("storage", function(q) {
+        if ("originalEvent" in q && "key" in q.originalEvent) {
+          q = q.originalEvent.key;
+          if (q === MOST_RECENTLY_OPENED_WINDOW_ID_KEY) {
+            checkIfMostRecentlyOpenedWindowIdChanged();
+          } else {
+            if (userstorage.isEnabled()) {
+              if (userstorage.isUserStorageKey(q)) {
+                q = userstorage.stripKeyPrefix(q);
+                userstorage.notifyChange(q);
               }
             }
           }
-        });
-      }
+        }
+      });
     },
     localStorageSupported : function() {
       return l;
@@ -6091,9 +5480,7 @@ var localstorage_helper = function() {
         n.setItem(q, o);
       } catch (c) {
         if (FULL_OFFLINE_ENABLED) {
-          if (!IS_PACKAGED_APP) {
             ui_sugar.showAlertDialog("The storage available to WorkFlowy on your device is full. If you are working offline, syncing your data should free up space. If problems persist, please email <strong>help@workflowy.com</strong> and tell us what is happening.");
-          }
         }
       }
     },
@@ -6166,7 +5553,7 @@ var userstorage = function() {
           SETTINGS[t].value = y;
           if (!m) {
             if (A) {
-              settings.registerSettingChange(t);
+              // settings.registerSettingChange(t);
             }
           }
         }
@@ -6609,302 +5996,6 @@ var userstorage = function() {
     PersistentDict : u,
     PersistentOperationQueue : s,
     PersistentOperationTransactionQueue : b
-  };
-}();
-var appcache_helper = function() {
-  function a(o, c) {
-    var g = 0;
-    for (;g < o.length;g++) {
-      (0, o[g])(c);
-    }
-  }
-  function e() {
-    try {
-      window.applicationCache.update();
-    } catch (o) {
-      utils.debugMessage(o);
-      utils.debugMessage("Exception thrown when applicationCache.update() called. Update failed.");
-      a(l, false);
-      a(q, false);
-      l = [];
-      q = [];
-      n = false;
-    }
-  }
-  function j(o) {
-    if (o === undefined) {
-      o = null;
-    }
-    if (f()) {
-      if (o !== null) {
-        q.push(o);
-      }
-      n = true;
-    } else {
-      if (o !== null) {
-        l.push(o);
-      }
-      e();
-    }
-  }
-  function h(o) {
-    if (f()) {
-      l.push(function() {
-        h(o);
-      });
-    } else {
-      utils.debugMessage("Marking cache manifest dirty on server so we can update app cache");
-      $.ajax({
-        url : "/mark_cache_manifest_dirty",
-        success : function() {
-          j(o);
-        }
-      });
-    }
-  }
-  function f() {
-    return window.applicationCache.status === window.applicationCache.CHECKING || window.applicationCache.status === window.applicationCache.DOWNLOADING;
-  }
-  var n = false;
-  var l = [];
-  var q = [];
-  return{
-    init : function() {
-      window.applicationCache.onupdateready = window.applicationCache.oncached = window.applicationCache.onobsolete = window.applicationCache.onnoupdate = function() {
-        a(l, window.applicationCache.status === window.applicationCache.UPDATEREADY);
-        l = q;
-        q = [];
-        if (n) {
-          n = false;
-          e();
-        } else {
-          apphooks.notifyThatAppCacheIsNowCached();
-        }
-      };
-      window.applicationCache.onerror = function() {
-        utils.pushArray(l, q);
-        q = [];
-        if (n || l.length > 0) {
-          n = false;
-          e();
-        }
-      };
-    },
-    update : j,
-    markCacheManifestDirtyAndThenUpdate : h,
-    swapCache : function() {
-      window.applicationCache.swapCache();
-    },
-    isCurrentlyDownloading : function() {
-      return window.applicationCache.status === window.applicationCache.DOWNLOADING;
-    }
-  };
-}();
-var indexeddb_helper = function() {
-  var a = null;
-  var e = ["initializationData", "localStorage", "otherData"];
-  var j = null;
-  var h = null;
-  var f = Class.extend({
-    init : function(l) {
-      this._name = l;
-    },
-    write : function(l, q, o) {
-      if (o === undefined) {
-        o = null;
-      }
-      var c = a.transaction([this._name], "readwrite");
-      c.objectStore(this._name).put(q, l);
-      c.oncomplete = function() {
-        if (o !== null) {
-          o();
-        }
-      };
-    },
-    read : function(l, q) {
-      a.transaction([this._name]).objectStore(this._name).get(l).onsuccess = function(o) {
-        q(o.target.result);
-      };
-    },
-    writeJSON : function(l, q, o) {
-      q = JSON.stringify(q);
-      this.write(l, q, o);
-    },
-    readJSON : function(l, q) {
-      this.read(l, function(o) {
-        o = o !== undefined ? JSON.parse(o) : undefined;
-        q(o);
-      });
-    },
-    writeJSONWithTimestamp : function(l, q, o) {
-      var c = this;
-      this.writeJSON(l, q, function() {
-        var g = date_time.getCurrentTimeInMS();
-        c.write(l + "__writeTimestamp", g, o);
-      });
-    },
-    readJSONWithTimestamp : function(l, q) {
-      var o = this;
-      this.readJSON(l, function(c) {
-        if (c === undefined) {
-          q(c, null);
-        } else {
-          o.read(l + "__writeTimestamp", function(g) {
-            if (g === undefined) {
-              g = 0;
-            }
-            q(c, g);
-          });
-        }
-      });
-    },
-    readAll : function(l) {
-      var q = {};
-      a.transaction([this._name]).objectStore(this._name).openCursor().onsuccess = function(o) {
-        o = o.target.result;
-        if (o === undefined || o === null) {
-          l(q);
-        } else {
-          q[o.key] = o.value;
-          o["continue"]();
-        }
-      };
-    },
-    remove : function(l, q) {
-      if (q === undefined) {
-        q = null;
-      }
-      var o = a.transaction([this._name], "readwrite");
-      o.objectStore(this._name)["delete"](l);
-      o.oncomplete = function() {
-        if (q !== null) {
-          q();
-        }
-      };
-    },
-    bulkRemove : function(l, q) {
-      if (q === undefined) {
-        q = null;
-      }
-      var o = a.transaction([this._name], "readwrite");
-      var c = o.objectStore(this._name);
-      var g = 0;
-      for (;g < l.length;g++) {
-        c["delete"](l[g]);
-      }
-      o.oncomplete = function() {
-        if (q !== null) {
-          q();
-        }
-      };
-    },
-    clear : function(l) {
-      if (l === undefined) {
-        l = null;
-      }
-      var q = a.transaction([this._name], "readwrite");
-      q.objectStore(this._name).clear();
-      q.oncomplete = function() {
-        if (l !== null) {
-          l();
-        }
-      };
-    }
-  });
-  var n = Class.extend({
-    init : function(l) {
-      this._cachedKeyArray = this.length = this._keysToValues = null;
-      var q = this;
-      j.localStorage.readAll(function(o) {
-        q._keysToValues = o;
-        q.length = utils.objectSize(o);
-        l();
-      });
-    },
-    setItem : function(l, q) {
-      l = String(l);
-      q = String(q);
-      if (!(l in this._keysToValues)) {
-        this.length++;
-      }
-      this._keysToValues[l] = q;
-      j.localStorage.write(l, q);
-    },
-    getItem : function(l) {
-      l = String(l);
-      return l in this._keysToValues ? this._keysToValues[l] : null;
-    },
-    removeItem : function(l) {
-      l = String(l);
-      if (l in this._keysToValues) {
-        this.length--;
-        delete this._keysToValues[l];
-        j.localStorage.remove(l);
-      }
-    },
-    bulkRemove : function(l, q) {
-      var o = [];
-      var c = 0;
-      for (;c < l.length;c++) {
-        var g = String(l[c]);
-        if (g in this._keysToValues) {
-          this.length--;
-          delete this._keysToValues[g];
-          o.push(g);
-        }
-      }
-      j.localStorage.bulkRemove(o, q);
-    },
-    key : function(l) {
-      if (l === 0) {
-        this._cachedKeyArray = utils.objectPropertyNames(this._keysToValues);
-      }
-      if (l < 0 || l >= this._cachedKeyArray.length) {
-        return null;
-      }
-      return this._cachedKeyArray[l];
-    },
-    clear : function() {
-      this._keysToValues = {};
-      this.length = 0;
-      j.localStorage.clear();
-    }
-  });
-  return{
-    open : function(l) {
-      var q = indexedDB.open("workflowy", 1);
-      q.onupgradeneeded = function(o) {
-        o = o.target.result;
-        var c = 0;
-        for (;c < e.length;c++) {
-          o.createObjectStore(e[c]);
-        }
-      };
-      q.onsuccess = function(o) {
-        a = o.target.result;
-        a.onerror = function(g) {
-          throw Error("IndexedDB database error: " + g.target.errorCode);
-        };
-        j = {};
-        o = 0;
-        for (;o < e.length;o++) {
-          var c = e[o];
-          j[c] = new f(c);
-        }
-        h = new n(function() {
-          l();
-        });
-      };
-      q.onerror = function() {
-        throw Error("Error opening IndexedDB database.");
-      };
-    },
-    getLocalStorageAdapter : function() {
-      return h;
-    },
-    getStores : function() {
-      return j;
-    }
   };
 }();
 var dom_utils = function() {
@@ -9390,10 +8481,6 @@ var project_tree = function() {
       if (!b) {
         s = "COLLAPSE";
       }
-      event_tracker.recordAction({
-        type : s,
-        payload : this.projectid
-      });
     },
     isExpanded : function() {
       return global_project_tree_object.isExpanded(this.getProjectTreeObject());
@@ -9962,7 +9049,6 @@ var project_tree = function() {
       this.pendingOperationQueue.append(s);
       push_poll.updateSaveStatus();
       push_poll.scheduleNextPushAndPoll();
-      event_tracker.track("operation--" + b);
       return true;
     },
     isLastLocallyDeletedProjectId : function(b) {
@@ -12616,7 +11702,7 @@ var push_poll = function() {
               }
             }
             if ("logged_out" in A && A.logged_out) {
-              showLoginPopup();
+              alert('Please login.')
             } else {
               var z = A;
               project_tree.getAllProjectTreesHelper().markIfRefreshedProjectTreeNeededForRemoteUndeletes(z);
@@ -12678,25 +11764,9 @@ var push_poll = function() {
       }
       t();
     };
-    if (FULL_OFFLINE_ENABLED && !IS_PACKAGED_APP) {
-      appcache_helper.markCacheManifestDirtyAndThenUpdate(function(A) {
-        if (A) {
-          utils.debugMessage("App cache updated. Swapping to new cache and loading new project tree data.");
-          appcache_helper.swapCache();
-          fetchInitializationData(y);
-        } else {
-          utils.debugMessage("Failed to update app cache.");
-          t();
-        }
-      });
-    } else {
-      fetchInitializationData(function(A) {
-        if (IS_PACKAGED_APP) {
-          writeInitializationDataToIndexedDB(A);
-        }
-        y(A);
-      }, true);
-    }
+    fetchInitializationData(function(A) {
+      y(A);
+    }, true);
   }
   var q = 5E3;
   var o = 5E3;
@@ -12766,11 +11836,6 @@ var push_poll = function() {
         }
       }
     },
-    notifyAjaxLoginComplete : function() {
-      if (g) {
-        n();
-      }
-    },
     scheduleNextPushAndPoll : scheduleNextPushAndPoll,
     pushPollAlreadyScheduled : a,
     scheduleImmediatePollOnNextTick : function() {
@@ -12838,19 +11903,6 @@ var location_history = function() {
     return F;
   }
   function n() {
-    if (IS_PACKAGED_APP) {
-      var B = null;
-      if (IS_ANDROID_APP) {
-        if (userstorage.isEnabled()) {
-          var J = userstorage.read(u);
-          if (J !== null) {
-            B = JSON.parse(J);
-            B = new z(B.zoomedProjectId, B.searchQuery, B.projectTreeRootProjectId);
-          }
-        }
-      }
-      return B !== null ? B : new z(project_tree.ROOT_PROJECTID, null, null);
-    } else {
       if (app_detect.isIOSApp()) {
         if (userstorage.isEnabled()) {
           B = userstorage.read(b);
@@ -12860,15 +11912,8 @@ var location_history = function() {
         }
       }
       return q();
-    }
   }
   function l() {
-    if (IS_PACKAGED_APP) {
-      if (userstorage.isEnabled()) {
-        var B = s.getJson();
-        userstorage.write(u, B);
-      }
-    } else {
       if (app_detect.isIOSApp()) {
         if (userstorage.isEnabled()) {
           setTimeout(function() {
@@ -12877,7 +11922,6 @@ var location_history = function() {
           }, 0);
         }
       }
-    }
   }
   function q() {
     var B = $.address.pathNames();
@@ -12920,15 +11964,7 @@ var location_history = function() {
     }
   }
   function d(B) {
-    if (IS_PACKAGED_APP) {
-      if (!m) {
-        if (!(!w.isEmpty() && B.equals(w.last()))) {
-          w.push(B);
-          t.clear();
-          e();
-        }
-      }
-    }
+
   }
   function k(B) {
     return "/" + (B !== project_tree.ROOT_PROJECTID ? project_ids.truncateProjectId(B) : "");
@@ -13161,18 +12197,6 @@ var location_history = function() {
       }
       c(n());
       a();
-      if (IS_PACKAGED_APP) {
-        $("#backwardNavigationButton.enabled").live("click", function() {
-          r();
-        });
-        $("#forwardNavigationButton.enabled").live("click", function() {
-          x();
-        });
-        $(".navigationButton").mousedown(function() {
-          return false;
-        });
-        e();
-      }
     },
     notifyWindowFocus : function() {
       if (A === null) {
@@ -13720,7 +12744,6 @@ var search = function() {
       } else {
         $("#searchBox").val("");
         p();
-        event_tracker.track("search--cancelled");
       }
     }
   }
@@ -14437,7 +13460,6 @@ var search = function() {
           }, 1);
           if (!(S.keyCode === $.ui.keyCode.TAB || (S.keyCode === $.ui.keyCode.ESCAPE || S.keyCode === $.ui.keyCode.DOWN))) {
             v();
-            event_tracker.track("search--typed");
           }
         }
       });
@@ -17975,30 +16997,6 @@ var item_select = function() {
   };
 }();
 var appearance = function() {
-  function a(n, l) {
-    var q;
-    $(l === "font" ? FONT_OPTIONS : THEME_OPTIONS).each(function(o, c) {
-      if (c.name === n) {
-        q = c;
-        return false;
-      }
-    });
-    return q;
-  }
-  function e(n) {
-    var l = n.type === "font" ? $("#fontChooser") : $("#themeChooser");
-    l.find(".galleryShowButton").html(n.pretty_name + " &raquo;");
-    $(".option-thumb.current", l).removeClass("current");
-    n = $(".option-name-" + n.name, l);
-    n.addClass("current");
-    $(".currentMark", l).remove();
-    n.find(".option-pretty-name").prepend('<span class="currentMark">Current: </span>');
-  }
-  function j() {
-    if (APPCACHE_ENABLED) {
-      appcache_helper.update();
-    }
-  }
   function h(n, l, q) {
     if (q === undefined) {
       q = false;
@@ -18031,627 +17029,10 @@ var appearance = function() {
     return ON_DEVELOPMENT_SERVER ? "/get_css/" + l + "?type=" + n : "/static/css/" + o + "/" + q + l + ".css";
   }
   return{
-    buildVisualSelector : function(n, l, q, o, c, g) {
-      q = $(q);
-      q.empty();
-      if (!($(n).filter(function() {
-        return this.name === l;
-      }).length > 0)) {
-        l = "default";
-      }
-      var d = $(n).filter(function(v, r) {
-        return r.is_free;
-      }).get();
-      n = $(n).filter(function(v, r) {
-        return!r.is_free;
-      }).get();
-      n = (o = IS_MOBILE && !true) ? d : d.concat(n);
-      d = 0;
-      for (;d < n.length;d++) {
-        var k = n[d];
-        var p = $('<div class="option-thumb option-name-' + k.name + '" data-name="' + k.name + '" data-type="' + k.type + '"  />');
-        if (k.type === "theme") {
-          p.append('<img src="' + MEDIA_URL + "i/" + g + "/" + k.name + '_thumb.jpg"><div class="option-pretty-name">' + k.pretty_name + "</div>");
-        } else {
-          p.append(k.pretty_name);
-          if (d == 0) {
-            p.append('<div style="font-size:11px;font-style:italic;color:#999;">default</div>');
-          }
-          p.attr("style", k.font_styles);
-        }
-        if (k.is_free) {
-          p.addClass("free");
-        }
-        q.append(p);
-        if (k.name === l) {
-          e(k);
-        }
-      }
-      if (!true) {
-        if (!o) {
-          q.find(".option-thumb.free:last").after('<div class="moreInfo">' + c + "</div>");
-        }
-      }
-    },
-    getStyleObjectFromThumb : function(n) {
-      var l = n.data("type");
-      n = n.data("name");
-      return a(n, l);
-    },
-    setStyle : function(n) {
-      function l(d, k) {
-        var p = d.type === "font" ? $("#fontChooser > .gallery") : $("#themeChooser > .gallery");
-        $(".waiting", p).remove();
-        $(".option-name-" + d.name, p).append('<div class="waiting"></div>');
-        h(d, function(v) {
-          k(v);
-          e(d);
-          $(".waiting", p).remove();
-        });
-      }
-      var q = n.type === "font" ? $("#fontChooser > .gallery") : $("#themeChooser > .gallery");
-      var o = $(".option-name-" + n.name, q);
-      $(".option-thumb .galleryProNotice", q).remove();
-      if (!true && !n.is_free) {
-        $(".galleryProNotice", q).clone().appendTo(o);
-        return false;
-      }
-      if (n.type === "font") {
-        l(n, function() {
-          settings.changeSettings({
-            font : n.name
-          }, false, j);
-        });
-      } else {
-        var c = a(n.font, "font");
-        var g = {
-          theme : false,
-          font : false
-        };
-        q = function(d) {
-          g[d] = true;
-          if (g.theme) {
-            if (g.font) {
-              settings.changeSettings({
-                theme : n.name,
-                font : c.name
-              }, false, j);
-            }
-          }
-        };
-        l(n, q);
-        l(c, q);
-      }
-    },
     changeCSS : h
   };
 }();
-var friend_recommendation = function() {
-  function a() {
-    $("#promptContext").html("You've been using WorkFlowy for more than a week! We'd really appreciate it if you took a moment to let us know how useful WorkFlowy is to you.");
-    $("#ratingDialog").dialog({
-      modal : true,
-      width : 500,
-      title : "What do you think of WorkFlowy?",
-      open : function() {
-        _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/rating_prompted/"]);
-      },
-      close : function() {
-        _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/rating_dialog_closed/"]);
-      }
-    });
-  }
-  function e(j) {
-    var h = $("#ratingDialog");
-    _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/rating_given/" + j]);
-    if (j === "high") {
-      j = "<p>We're glad you like WorkFlowy. Please share it with your friends!</p>";
-      if (!true) {
-        j += $("#post-rating-dialog-text").html();
-      }
-      var f = REFERRAL_LINK + "&utm_campaign=friend_recommendation_prompt_10_days&utm_medium=facebook&utm_source=wf";
-      h.html(j).dialog("option", {
-        title : "Yay! Three stars!",
-        buttons : {
-          "Share WorkFlowy on Facebook" : function() {
-            FB.ui({
-              method : "feed",
-              link : f,
-              picture : "https://www.workflowy.com/media/i/workflowy_icon_rounded_corners_512x512.png",
-              name : "WorkFlowy - Simplify your life.",
-              caption : "workflowy.com",
-              description : "WorkFlowy offers a simple, but powerful way to manage all the information in your life. It'll help you stress less and do more.",
-              actions : [{
-                name : "Try WorkFlowy",
-                link : f
-              }]
-            }, function(n) {
-              if (n) {
-                if (n.post_id) {
-                  _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/facebook_post_completed"]);
-                }
-              }
-              h.dialog("close");
-            });
-            _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/facebook_share_button_clicked"]);
-          },
-          Close : function() {
-            $(this).dialog("close");
-          }
-        }
-      });
-    } else {
-      j = '<p style="margin:20px 10px 10px;">Thanks, we hope you enjoy WorkFlowy.</p>';
-      h.html(j).dialog("option", {
-        title : "Thanks for your feedback!",
-        buttons : {
-          Close : function() {
-            h.dialog("close");
-          }
-        }
-      });
-    }
-  }
-  return{
-    init : function() {
-      $("#ratingDialog .star").live("click", function() {
-        var j = $(this).parent(".rating").data("rating");
-        e(j);
-      });
-      a();
-    }
-  };
-}();
-var keyboard_shortcut_helper = function() {
-  function a() {
-    settings.changeSettings({
-      show_keyboard_shortcuts : true
-    }, true);
-  }
-  function e() {
-    settings.changeSettings({
-      show_keyboard_shortcuts : false
-    }, true);
-  }
-  return{
-    init : function() {
-      $("#keyboardShortcutHelper > .title").live("click", function() {
-        $("#keyboardShortcutHelper").toggleClass("closed");
-      });
-      $("input[type=checkbox].keyboardShortcutHelper").live("change", function() {
-        var j = $(this);
-        if (j.is(":checked")) {
-          a(j);
-        } else {
-          e(j);
-        }
-      });
-    },
-    toggle : function() {
-      if ($("#keyboardShortcutHelper").hasClass("visible")) {
-        e();
-      } else {
-        a();
-      }
-    },
-    registerSettingChange : function() {
-      if (!IS_MOBILE) {
-        var j = SETTINGS.show_keyboard_shortcuts.value;
-        var h = $("#keyboardShortcutHelper");
-        var f = $("input[type=checkbox].keyboardShortcutHelper");
-        if (j) {
-          h.removeClass("closed").addClass("visible");
-          f.attr("checked", "checked");
-        } else {
-          h.removeClass("visible");
-          f.removeAttr("checked");
-        }
-      }
-    }
-  };
-}();
-var forms_ = function() {
-  var a = function(e, j) {
-    e.find(".errors").remove();
-    $.each(j, function(h, f) {
-      var n = "";
-      $.each(f, function(q, o) {
-        n += o + " ";
-      });
-      var l = "input[name=" + h + "]";
-      if (e.has(l).length !== 0) {
-        e.find(l).after('<div class="errors">' + n + "</div>");
-      } else {
-        e.prepend('<div class="errors">' + n + "</div>");
-      }
-    });
-  };
-  return{
-    ajaxify : function(e, j, h, f) {
-      function n() {
-        if (e.data("submitting") === true) {
-          return false;
-        }
-        e.data("submitting", true);
-        if (h !== null) {
-          h();
-        }
-        var l = {};
-        $("input[type=text], input[type=email], input[type=password]", e).each(function(q, o) {
-          o = $(o);
-          l[o.attr("name")] = o.val();
-        });
-        $.ajax({
-          url : e.attr("action"),
-          data : l,
-          dataType : "json",
-          type : "POST",
-          success : function(q) {
-            e.data("submitting", false);
-            if ("errors" in q) {
-              a(e, q.errors);
-            } else {
-              if (j !== null) {
-                j.call(e, q);
-              }
-            }
-          },
-          error : function() {
-            e.data("submitting", false);
-            e.children(".errors").remove();
-            e.prepend('<div class="errors">You must be online to do this. Please check your connection and try again.</div>');
-          }
-        });
-        return false;
-      }
-      if (j === undefined) {
-        j = null;
-      }
-      if (h === undefined) {
-        h = null;
-      }
-      if (f === undefined) {
-        f = false;
-      }
-      if (f) {
-        e.bind("submit", n);
-      } else {
-        e.live("submit", n);
-      }
-    }
-  };
-}();
-var settings = function() {
-  function a() {
-    $(".chromeAppOnly").show();
-    gaService.getConfig().addCallback(function(g) {
-      g.isTrackingPermitted();
-      var d = $(".js-chrome-app-no-track");
-      if (!g.isTrackingPermitted()) {
-        d.attr("checked", "checked");
-      }
-      d.live("change", function(k) {
-        if ($(k.target).attr("checked")) {
-          g.setTrackingPermitted(false);
-        } else {
-          g.setTrackingPermitted(true);
-        }
-      });
-    });
-  }
-  function e() {
-    $.ajax({
-      url : "/get_settings",
-      dataType : "json",
-      success : function(g) {
-        if (g != null) {
-          if (userstorage.isEnabled()) {
-            userstorage.updateSettingsFromServer(g);
-          }
-        }
-      }
-    });
-  }
-  function j() {
-    var g;
-    for (g in SETTINGS) {
-      f(g);
-    }
-  }
-  function h(g, d) {
-    if (d) {
-      g.attr("checked", "checked");
-    } else {
-      g.removeAttr("checked");
-    }
-  }
-  function f(g) {
-    switch(g) {
-      case "show_keyboard_shortcuts":
-        keyboard_shortcut_helper.registerSettingChange();
-        break;
-      case "unsubscribe_from_summary_emails":
-        h($("#summaryEmailsCheckboxSettings"), !SETTINGS.unsubscribe_from_summary_emails.value);
-        break;
-      case "backup_to_dropbox":
-        h($("#backupToDropbox"), SETTINGS.backup_to_dropbox.value);
-        break;
-      case "email":
-        g = SETTINGS.email.value;
-        $(".userEmail").text(g);
-        break;
-      case "username":
-        g = SETTINGS.username.value;
-        $(".loginForm input[name=username]").attr("value", html_utils.htmlEscapeText(g));
-        break;
-      case "saved_views_json":
-        saved_views.registerSettingChange();
-        break;
-      case "auto_hide_left_bar":
-        left_bar.registerAutoHideSettingChange();
-    }
-  }
-  function n(g, d, k) {
-    if (d === undefined) {
-      d = false;
-    }
-    if (k === undefined) {
-      k = null;
-    }
-    var p = {};
-    var v = {};
-    for (settingName in g) {
-      var r = g[settingName];
-      var x = SETTINGS[settingName];
-      var u = x.value;
-      x.value = r;
-      p[settingName] = r;
-      if (x.saveToServer) {
-        if (settingName === "saved_views_json") {
-          v.saved_views_json_delta = saved_views.generateViewListJsonDiff(u, r);
-        } else {
-          v[settingName] = x.isFlag ? r ? "yes" : "no" : r;
-        }
-      }
-      if (d) {
-        f(settingName);
-      }
-    }
-    if (!utils.objectIsEmpty(p)) {
-      if (userstorage.isEnabled()) {
-        userstorage.saveSettings(p);
-      }
-    }
-    if (!utils.objectIsEmpty(v)) {
-      l(v, k);
-    }
-  }
-  function l(g, d) {
-    if (d === undefined) {
-      d = null;
-    }
-    var k = {
-      url : "/change_settings/",
-      data : g,
-      dataType : "json",
-      type : "POST"
-    };
-    if (d !== null) {
-      k.success = d;
-    }
-    $.ajax(k);
-  }
-  function q(g) {
-    g.fadeOut(100).hide();
-    g = IS_MOBILE ? "touchend" : "click";
-    $("body").die(g + ".hideGallery");
-  }
-  function o(g) {
-    var d = g.form;
-    var k = g.button;
-    d.hide = function() {
-      k.removeClass("cancel");
-      d.slideUp(function() {
-        d.find(".errors").text("");
-        d.find("input[type=text], input[type=password]").val("");
-      });
-    };
-    d.show = function() {
-      k.addClass("cancel");
-      d.slideDown();
-    };
-    k.clickOrTapHandler({
-      event : function() {
-        if (d.is(":visible")) {
-          d.hide();
-        } else {
-          d.show();
-        }
-      }
-    });
-    forms_.ajaxify(d, g.successCallback);
-  }
-  function c() {
-    $("#buttonBar").removeClass("open");
-    $("body").unbind(IS_MOBILE ? "touchend" : "click", c);
-  }
-  return{
-    init : function() {
-      j();
-      setTimeout(e, 1);
-      if (IS_CHROME_APP) {
-        a();
-      }
-      $("#settingsPopup .setting:visible").last().addClass("last");
-      $(".menu-button").clickOrTapHandler({
-        event : function() {
-          var g = $("#buttonBar");
-          if (g.hasClass("open")) {
-            c();
-          } else {
-            g.addClass("open");
-            $("body").bind(IS_MOBILE ? "touchend" : "click", c);
-          }
-          return false;
-        },
-        useBind : true
-      });
-      $("#settingsPopup").dialog({
-        autoOpen : false,
-        width : 670,
-        buttons : {
-          Close : function() {
-            $(this).dialog("close");
-          }
-        },
-        modal : false,
-        position : ["center", 150],
-        title : "Settings",
-        open : function() {
-          appearance.buildVisualSelector(THEME_OPTIONS, SETTINGS.theme.value, "#theme-scroller", "Free Theme", "Pro Themes", "themes");
-          appearance.buildVisualSelector(FONT_OPTIONS, SETTINGS.font.value, "#font-scroller", "Free Fronts", "Pro Fonts", "fonts");
-        },
-        close : function() {
-          $(this).find(".gallery").each(function() {
-            q($(this));
-          });
-        }
-      });
-      $(".option-thumb:not(.current)").clickOrTapHandler({
-        event : function() {
-          var g = $(this);
-          g = appearance.getStyleObjectFromThumb(g);
-          appearance.setStyle(g);
-          return false;
-        }
-      });
-      $(".gallery > .closeMeButton").clickOrTapHandler({
-        event : function() {
-          var g = $(this).closest(".gallery");
-          q(g);
-        }
-      });
-      $(".gallerySelector > .galleryShowButton").clickOrTapHandler({
-        event : function() {
-          var g = $(this).nextAll(".gallery");
-          $(".gallery").not(g).fadeOut(100);
-          g.fadeToggle(100);
-          var d = IS_MOBILE ? "touchend" : "click";
-          $("body").live(d + ".hideGallery", function(k) {
-            if ($(k.target).closest(".gallery").length === 0) {
-              q(g);
-              return false;
-            }
-          });
-          return false;
-        }
-      });
-      $("#summaryEmailsCheckboxSettings").bind("change", function() {
-        var g = !$(this).is(":checked");
-        n({
-          unsubscribe_from_summary_emails : g
-        });
-      });
-      if (app_detect.isIOSApp()) {
-        $("#backupToDropbox").parent().hide();
-      }
-      $("#backupToDropbox").live("change", function() {
-        var g = $(this).is(":checked");
-        n({
-          backup_to_dropbox : g
-        });
-        if (g) {
-          window.open(URL_PRE_PATH_FOR_PACKAGED_APPS + "/authorize_dropbox", "_blank", "width=900,height=700");
-        }
-      });
-      o({
-        successCallback : function(g) {
-          n({
-            email : g.email,
-            username : g.username
-          }, true);
-          this.hide();
-        },
-        button : $("#changeEmailLink"),
-        form : $("#changeEmailForm")
-      });
-      o({
-        successCallback : function() {
-          showMessage("Password successfully changed.");
-          this.hide();
-        },
-        button : $("#changePasswordLink"),
-        form : $("#changePasswordForm")
-      });
-      $("#deleteAccountDialog").dialog({
-        width : 400,
-        modal : true,
-        autoOpen : false,
-        open : function() {
-          var g = $("#deleteAccountFormTemplate").html();
-          $(this).append(g);
-        },
-        close : function() {
-          $(this).children("#deleteAccountConfirmation").remove();
-        },
-        title : "Confirm Account Deletion",
-        buttons : [{
-          text : "Permanently Delete Account",
-          click : function() {
-            $("#deleteAccountConfirmation").submit();
-          }
-        }, {
-          text : "Cancel",
-          click : function() {
-            $(this).closest(".ui-dialog-content").dialog("close");
-          }
-        }]
-      });
-      $("#deleteAccountLink").live("click", function() {
-        $("#deleteAccountDialog").dialog("open");
-      });
-      $(".offline-export-dialog").dialog({
-        autoOpen : false,
-        width : 600,
-        title : "Export your offline data",
-        buttons : {
-          Close : function() {
-            $(this).dialog("close");
-          }
-        },
-        close : function() {
-          $(this).children(".exported-offline-data").val("");
-        }
-      });
-      $(".export-offline-data-link").clickOrTapHandler({
-        event : function() {
-          var g = $(".offline-export-dialog");
-          var d = JSON.stringify(localstorage_helper.hackyDumpAllWithDecompressedChunks());
-          g.children(".exported-offline-data").val(d);
-          d = encodeURI("WorkFlowy Offline Data Export");
-          $(".offline-export-email-button").attr("href", "mailto:help@workflowy.com?subject=" + d + "&body=Please 1) Paste the offline data from WorkFlowy here and 2) Describe the situation you were in when you had trouble syncing");
-          g.dialog("open");
-        }
-      });
-    },
-    toggleSettingsDialogVisibility : function() {
-      var g = $("#settingsPopup");
-      if (g.dialog("isOpen")) {
-        g.dialog("close");
-      } else {
-        g.dialog("open");
-      }
-    },
-    hideMenu : c,
-    registerSettingChange : f,
-    changeSettings : n,
-    saveShowCompleted : function(g) {
-      l({
-        show_completed : g ? "yes" : "no"
-      });
-    }
-  };
-}();
+
 var date_time = function() {
   var a = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   var e = 0;
@@ -19291,19 +17672,10 @@ var apphooks = function() {
     }
   }
   function h() {
-    if (app_detect.isIOSApp()) {
-      if (!e()) {
-        if (!(APPCACHE_ENABLED && appcache_helper.isCurrentlyDownloading())) {
-          if (app_detect.getIOSAppVersion() >= 3) {
-            a("ios-all-business-finished");
-          }
-        }
-      }
-    }
   }
   return{
     haveUnfinishedBusiness : function() {
-      return e() || APPCACHE_ENABLED && appcache_helper.isCurrentlyDownloading();
+      return e();
     },
     finishAllBusiness : function() {
       j();
@@ -19893,7 +18265,6 @@ var moving = function() {
             undo_redo.finishOperationBatch();
           }
         }
-        event_tracker.track("moved");
       }
       if (!g) {
         A = IS_MOBILE ? 250 : 500;
@@ -20462,9 +18833,9 @@ var saved_views = function() {
   }
   function v() {
     function I() {
-      settings.changeSettings({
-        saved_views_json : r.getJson()
-      });
+      // settings.changeSettings({
+      //   saved_views_json : r.getJson()
+      // });
     }
     var L = selectOnActivePage(".pageStar").hasClass("starred");
     var M = f();
@@ -21527,11 +19898,7 @@ var left_bar = function() {
       });
     },
     _handleClick : function(H) {
-      if (H.button === 0) {
-        settings.changeSettings({
-          auto_hide_left_bar : !this.props.autoHideEnabled
-        }, true);
-      }
+
     },
     _getTooltipText : function() {
       return this.props.autoHideEnabled ? "Bar set to hide when mouse leaves" : "Bar set to always show";
@@ -21982,58 +20349,7 @@ var left_bar = function() {
   };
 }();
 
-user = function() {
-  return{
-    isLoggedIn : function() {
-      return USER_ID !== "-1";
-    },
-    timeSinceJoin : function() {
-      var a = Math.floor((new Date - new Date(COHORT)) / 1E3 / 60 / 60 / 24);
-      return{
-        timeSinceJoinDays : a,
-        timeSinceJoinWeeks : Math.floor(a / 7),
-        timeSinceJoinMonths : Math.floor(a / 30)
-      };
-    },
-    joinDateAsInteger : function() {
-      return parseInt(COHORT.split("-").join(""), 10);
-    }
-  };
-}();
-var interface_action_handler = function() {
-  function a(j) {
-    e[j.type](j);
-  }
-  var e = {
-    ZOOM : function(j) {
-      j = j.payload;
-      var h = getProjectOnActivePageUsingProjectid(j);
-      if (h.length) {
-        h.selectIt();
-      } else {
-        j = project_tree.getAllProjectTreesHelper().findProjectByProjectId(j);
-        selectProjectReferenceInstantly(j);
-      }
-    },
-    EXPAND : function(j) {
-      getProjectOnActivePageUsingProjectid(j.payload).showChildren().setExpanded(true);
-    },
-    COLLAPSE : function(j) {
-      getProjectOnActivePageUsingProjectid(j.payload).hideChildren().setExpanded(false);
-    },
-    START_RECORDING : function(j) {
-      a({
-        type : "ZOOM",
-        payload : j.payload.zoomedProjectId
-      });
-    },
-    STOP_RECORDING : function() {
-    }
-  };
-  return{
-    dispatch : a
-  };
-}();
+
 
 /*
   Added functionality below:
