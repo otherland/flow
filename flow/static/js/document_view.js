@@ -1318,7 +1318,7 @@ function getProjectOnActivePageUsingProjectid(a) {
   return selectOnActivePage("[projectid=" + a + "]").getProject();
 }
 function createPage() {
-  var a = $('<div class="page" style="transition: none;"><div class="pageStar"></div><div class="mainTreeRoot project open" projectid="None"><div class="name"><div class="content"></div><span class="parentArrow"></span></div><div class="notes"><div class="content"></div></div><div class="children"></div><div class="addButton" title="Add new item">+</div></div><div class="footer"><h3 class="siteSlogan">Make lists, not war.</h3></div><div class="bottomPadding"></div><div class="widgetContainer"></div></div>');
+  var a = $('<div class="page" style="transition: none;"><div class="pageStar"></div><div class="mainTreeRoot project open" projectid="None"><div class="name"><div class="content"></div><span class="parentArrow"></span></div><div class="notes"><div class="content"></div></div><div class="children"></div><div class="addButton" title="Add new item">+</div></div><div class="footer"><h3 class="siteSlogan"></h3></div><div class="bottomPadding"></div><div class="widgetContainer"></div></div>');
   $("#pageContainer").append(a);
   var e = a.css("transition");
   setTimeout(function() {
