@@ -1499,7 +1499,42 @@ function allJSFinishedLoadingCallback() {
     initializeLocalStorageAndGetInitializationData();
   }
 }
-function initializationDataFetchFinishedCallback(a, e) {
+function decryptTree(data) {
+  function decryptChild(project) {
+    var deferred = $.Deferred()
+    deferreds.push(deferred)
+    if (typeof project.ch === 'object') {
+      (function(){
+        for (var i = 0; i < project.ch.length; i++) {
+          decryptChild(project.ch[i])
+        }
+      })()
+    }
+    if (project.nm !== null && project.nm.length > 0) {
+      PGP.decryptData(project.nm).then(function(cipher){
+        console.log('success decrypt', cipher.data)
+        project.nm = cipher.data
+        deferred.resolve()
+      })
+    } else {
+      deferred.resolve()
+    }
+  }
+
+  var children = data.projectTreeData.mainProjectTreeInfo.rootProjectChildren
+  var deferreds = []
+  $.when.all( deferreds ).then(function(){
+    setupGlobalVariables(data, e)
+  })
+  for (var i = 0; i < children.length; i++) {
+    decryptChild(children[i])
+  }
+}
+function initializationDataFetchFinishedCallback(data, e) {
+  // decryptTree(data)
+    setupGlobalVariables(data, e)
+}
+function setupGlobalVariables(a, e) {
   if (e === undefined) {
     e = null;
   }
@@ -8532,7 +8567,6 @@ var project_tree_object = function() {
       return t;
     },
     initialize : function(u, b) {
-      console.log('initialize', u)
       if (!("ch" in u)) {
         u.ch = [];
       }
@@ -9780,6 +9814,7 @@ var project_tree = function() {
       return Math.floor(b / 1E3 - this.dateJoinedTimestampInSeconds);
     },
     initializeProjectTree : function() {
+      console.log('initializeProjectTree');
       this.projectIdToProjectMap = new project_ids.ProjectIdMap;
       this.sharedSubtreePlaceholders = {};
       this.sharedProjectIdToSharedProjectMap = {};
@@ -9792,7 +9827,6 @@ var project_tree = function() {
       }
     },
     initializeProjectTreeSubtree : function(b, s) {
-      console.log(b, 9794)
       var m = project_tree_object.getAddedSubtreeShareId(b);
       if (m === null) {
         project_tree_object.initialize(b, this);
@@ -11843,7 +11877,6 @@ var operations = function() {
       },
       createProjects : function(c, g, d, k, p, v) {
         function r(m) {
-          console.log('11846')
           var w = [];
           var t = project_tree_object.getChildren(m);
           if (t !== undefined) {
@@ -12793,16 +12826,22 @@ var push_poll = function() {
         Encrypt the push_poll_data operations.
         When complete, do ajax.
       */
-      if (typeof push_poll_data[0].operations !== "undefined") {
-        PGP.encryptOperations(push_poll_data[0].operations).then(function(operations) {
-          push_poll_data[0].operations = operations;
-          payload.push_poll_data = JSON.stringify(push_poll_data);
-          ajaxData.data = payload;
-          $.ajax(ajaxData);
-        });
+      var operations = push_poll_data[0].operations;
+      if (typeof operations !== "undefined") {
+        (function(){
+          console.log('found operations!', operations)
+          PGP.encryptOperations(operations).then(function(updated_operations) {
+            push_poll_data[0].operations = updated_operations
+            payload.push_poll_data = JSON.stringify(push_poll_data);
+            ajaxData.data = payload;
+            console.log('calling ajax')
+            $.ajax(ajaxData);
+          });
+        })();
       } else {
         payload.push_poll_data = JSON.stringify(push_poll_data);
         ajaxData.data = payload;
+        console.log('calling ajax')
         $.ajax(ajaxData);
       }
 
@@ -23436,22 +23475,9 @@ var interface_action_handler = function() {
 */
 
 var PGP = function() {
-  var PUBLIC_KEY = "-----BEGIN PGP PUBLIC KEY BLOCK-----Version: OpenPGP.js v2.3.3Comment: http://openpgpjs.orgxsBNBFfC18oBCADWfghKiV8IjY+WMCpAClSg2KJYhhyTvEeyWBdpPiGBwD0DVUxad7F/2UJeKe56nTM9C03ZovCT+jpYrTSUvHotaQk+6MhuUbhX3FITzaTpNiz4nUkth5yzH9cIQI9e+4vTOTBCs1qHkgIO1tD0aQyJp1xPvIaEdKoNTKakpV9sYRC4Yx7/Oo13SruAKOJ7mlOO4wRB65uO/7qY1lL5nvjQiEh7jHNzqPsND8cpWQGpEk67o6PcYL0HJsPR+ALl8Te2PGU53YF+ld2Ps8tj0y8icnwC82/p9FxRWzlXxVoFTt5OV59KzXdhp1hmpqq4AOYY4ZpLrIQVYOUiXWalfWnPABEBAAHNG1RvbSA8dG9tZGV2QHByb3Rvbm1haWwuY29tPsLAdQQQAQgAKQUCV8LXzAYLCQcIAwIJECps3dQgdGtHBBUIAgoDFgIBAhkBAhsDAh4BAABU9gf/bRnl5AooZ+Pfu8RqH2GC9Z3N3YveW7m5/liQ78ZlUWV79GEhCSRCDzVlEEqTN1It3LmsdWkWp/Sq7q6uUQjXIP0GZsKpp8dlyhnmoURST0r8maWk6wEYZtbazPedim0cRQwPjBsqeK9sT/8hc5EPu9D+fvg2ZyYCwi/H9G6QDwGCN+slRfLDSnmPv/sOgxkMpEjP8z6o/0Jlr8/fT2xOXwBt74cIqmcz+PCajHFnokIZOn1XlxVcfDkaPHofKyM1296nox9Z8zBxwX5vpzpQFkOyDiknbhngAO+YuOBzy1fmKsMieldDwtYm7awZGP9j6/6I1t9fWQw4+G6MzhdbR87ATQRXwtfKAQgAx9lNG4d9np2ekX3vsrxDMpGYEwrni9RM5sKAKexF5sUc2Xp3atIXZalTjeLoBvmhJ2Zpf4PsBd2o1UAGUWetsYDUlc2VYiwj3rCeIjBuL++v7kd01MPzBD0tqo2sLfyIkyLiGNxAEnNhM5nNctiHTKR8TPPCupTO91NevQqbTmV50++ivnDBo9dfI5OFMiUfyCbuNbOSERCn0OT+LeGAzZaMaZfGzrOlI1Z3DbBgFGwNGjRwEsZltEsh+iIogaqX3puHRgHrx7X9Sotm8n1VdTz4Y9cBFzir5TW8H4qiJFGN2pp/beWy9/B7Zuix8DNLSSbPZdvXaqIfarXoFTFnSQARAQABwsBfBBgBCAATBQJXwtfMCRAqbN3UIHRrRwIbDAAAa/wH/j1qJ6SqUeeJms0EBMmwWcEUAQLoWJnPfAq1c9r1vw2oiqZi1UjJ2RREW6Bv3zCigyoH7GywPUUki55sWsXW5ZhDDJ+v/odE443YTqONU6RMQXUeR/LkpaqbPif4JQGQqKfCQ+zTisGxQPO9aHnuVYyNKKQ7x3mDrXiaECljR3zxSFX7eIi+r7d9RF4P8Ck8ehgR6fc3UJ4F3V1rx6Q4Mvy30YAkFzJBwO9vkhkKyXcKC0vLjB0PuBiGFM+kczk0GSDyJLJJ/JFtvWVL/21uQgiM4BDxTuzvbjoCjCfO5aREU5lMQ7Y2t1mJ/LmmazY3n9I7bXjSqgl8Jgr//+exYfs==mKyS-----END PGP PUBLIC KEY BLOCK-----";
-  var PRIVATE_KEY = "-----BEGIN PGP PRIVATE KEY BLOCK-----Version: OpenPGP.js v2.3.3Comment: http://openpgpjs.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=z5Ll-----END PGP PRIVATE KEY BLOCK-----";
-  var KEY_NAME = 'Tom'
-  var keys = [];
-  function encryptData(data) {
-    if (typeof data == "undefined" || !keys.length) return data
-    var key = keys[0]
-    var options = {
-        data: data,
-        publicKeys: openpgp.key.readArmored(key.pubkey).keys
-    }
-    return openpgp.encrypt(options)
-  }
-  function decryptData(data) {
-    return data
-  }
+  var KEY_PASS = 'pass'
+  var PGP_KEY = {"name":"tomdev@protonmail.com","privkey":"-----BEGIN PGP PRIVATE KEY BLOCK-----\r\nVersion: OpenPGP.js v2.3.3\r\nComment: http://openpgpjs.org\r\n\r\n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\nugHZ3Q==\r\n=7gBY\r\n-----END PGP PRIVATE KEY BLOCK-----\r\n","pubkey":"-----BEGIN PGP PUBLIC KEY BLOCK-----\r\nVersion: OpenPGP.js v2.3.3\r\nComment: http://openpgpjs.org\r\n\r\nxsBNBFfGAi8BCADOTyIVjef45spJ+41RL0E60sdTpQIOpMtobOPNsEuZ2mR3\nFaL/gmibAOht/y7uT3JxM+JHlBctEgkbEGuPUkqDixIkiOWONsnGCV1wN/d9\nJAVi6HGKnprbwk0xiHt9yaDekvhEXdH99eeUkMjHFpTOlUJQStuHDq0onefV\ni7CJ78UYKKu4RBZgYTB/NqL+Sj0+vV1GTlKglsu6HBMDTMvSj1LgWM6uwbZ9\nloF5zOYfbJXE4yyAc68d+5YSb4+qs4E1W6Wq3W7yoLLt0YKXM6wbDgI12ybW\n4SxY0gx641K4GLm7NXFR/68O+thM1lNozEgt/6hPu9LQkRFQTodKt/2xABEB\nAAHNG1RvbSA8dG9tZGV2QHByb3Rvbm1haWwuY29tPsLAdQQQAQgAKQUCV8YC\nMAYLCQcIAwIJEEKi8wZq9Gw7BBUIAgoDFgIBAhkBAhsDAh4BAAC19ggAikKo\n8xPBe2U9Taj0+qHU+xdFpKIj83aQgdIScluaNp3/dhxsqXsXuq8ikYjdfIJb\nTN+TkzwALagBIoRZEPvstTEAmTjD63l6Hb/8E6yV9SyMG49cP6KVPmU8gg8G\n8nph52AK7iFnk3V5DuCXPJLSHnF7mrECEQE6XYENhV8BVwl+Bz5Y6otP81p0\ngZEro/gL98mDrPLUePl0lFWTjI4EshVpypjoUe6Ft14oVpiQnxXsQZAvyrMI\nJdDaNwfu3n28LwvP0omzWa15SoDb57EV09qHirui7yXPCvydIwUOGFAHsfow\nUKFShQxjnOc+LpB/BXy+lbdwKGOPdUbMaFABbM7ATQRXxgIvAQgA7AZ03Je2\nQZhu3xvRKeZnduil075D5mMqEp3lZoGeXKWLs4BIIXb37dty6Tul++fXEZGZ\n3ZJnNdYAl4ltCVGPTcB4+0tWmy0Bufr2GvHLHZh/9qFpynRQZp+s9V7z2JKz\nL+n+NAH7xb+jSuRM38AQ8K4Xg9FBTaInlRmROWt3iacaasCCA9/Csnk3thP8\n6OrtH4JyVeAgi+SFtpqSfpUkMZY+ni7N9uY+HdTlYTTSXNCOkS8J5Ziff91R\nm0U3zTnfc8qwNOKEAvuO5hfG/uypjovxN/tOqbXFkTSdyIrFsPHlZwGdSlUP\nBr+yDymRjcxDcYbxAj2Jn3XMs+R8LWBRkQARAQABwsBfBBgBCAATBQJXxgIw\nCRBCovMGavRsOwIbDAAAYJMH/iE59pwUpFmiqiUgjRvRIzrjhbeBm3e1i/bC\npGrNe1+cTbQR7sdVRMTMFAUY9g0Kkkx0hHpnQhifFZAyPxRV9T1eiCk7Nu8C\nStNl62YyiomSp3f6TDc/hZojwjnceg7F/O429tDNwAXuXJbX2rPeRI3P5EMJ\nE29N4AqNutKOIjpHRiqvMaVtbJKyUTudNvZ5gkArJ5lYuu/wj5WI5MFl83t8\nkgWX5XaRP5jbB8DJIcRYJjoD99Q8yaTQQU56o7NPzuyQyMRGlbQV1a5Yl370\n0V/eHnoD9ZlBXed+f8L/82wSGjMdihJIYumphyF9jZW8UvIDQ26buxBGFMXa\nVboB2d0=\r\n=c44I\r\n-----END PGP PUBLIC KEY BLOCK-----\r\n\r\n"};
+
   if (jQuery.when.all===undefined) {
       jQuery.when.all = function(deferreds) {
           var deferred = new jQuery.Deferred()
@@ -23468,37 +23494,64 @@ var PGP = function() {
           return deferred
       }
   }
+
+  function encryptData(data) {
+    var key = PGP_KEY
+    var options = {
+        data: data,
+        publicKeys: openpgp.key.readArmored(key.pubkey).keys
+    }
+    console.log('Encrypting data')
+    return openpgp.encrypt(options)
+  }
+
+  function decryptData(data) {
+    var key = PGP_KEY
+    var selectedKey = openpgp.key.readArmored(key.privkey).keys[0]
+    var decryptedPrivate = selectedKey.decrypt(KEY_PASS)
+    if (decryptedPrivate) {
+      var options = {
+          message: openpgp.message.readArmored(data),
+          privateKey: selectedKey
+      }
+    } else console.log('failed to decrypt private key')
+    return openpgp.decrypt(options)
+  }
+
   function encryptOperations (operations) {
-      var deferreds = []
+      var deferreds = _DEFERREDS
       for (var i = 0; i < operations.length; i++) {
-          var op = operations[i]
-          switch (op.type) {
-            case "edit" :
-              var promise = $.Deferred()
-              encryptOp(op).done(function ( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc ) {
-                  // all encryption statements have resolved
-                  // update operation with encrypted data
-                  if (encryptName !== null) {
-                      op.data.name = encryptName
-                  }
-                  if (encryptDesc !== null) {
-                      op.data.description = encryptDesc
-                  }
-                  if (encryptPrevName !== null) {
-                      op.undo_data.previous_name = encryptPrevName
-                  }
-                  if (encryptPrevDesc !== null) {
-                      op.undo_data.previous_description = encryptPrevDesc
-                  }
-                  console.log('completed', i, op)
-                  promise.resolve( op )
-              })
-              deferreds.push(promise)
-              break
-            default :
-              deferreds.push(op)
-              break
-          }
+          var op = operations[i];
+          (function(){
+            var deferred = $.Deferred();
+            switch (op.type) {
+              case "edit" :
+                encryptOp(op).done(function ( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc ) {
+                    // all encryption statements have resolved
+                    // update operation with encrypted data
+                    if (encryptName !== null) {
+                        op.data.name = encryptName
+                    }
+                    if (encryptDesc !== null) {
+                        op.data.description = encryptDesc
+                    }
+                    if (encryptPrevName !== null) {
+                        op.undo_data.previous_name = encryptPrevName
+                    }
+                    if (encryptPrevDesc !== null) {
+                        op.undo_data.previous_description = encryptPrevDesc
+                    }
+                    deferred.resolve( op )
+                    console.log('operation complete', op.data)
+                })
+                deferreds.push(deferred)
+                break
+              default :
+                deferreds.push(deferred)
+                deferred.resolve(op)
+                break
+            }
+          })()
       }
       return $.when.all( deferreds )
   }
@@ -23509,10 +23562,11 @@ var PGP = function() {
       var encryptPrevName = $.Deferred()
       var encryptPrevDesc = $.Deferred()
 
-      var promise = $.when( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc)
+      var deferred = $.when( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc )
 
       if (typeof op.data.name !== "undefined") {
         encryptData(op.data.name).then(function(cipher){
+          console.log('encrypted name')
           encryptName.resolve(cipher.data)
         })
       } else {
@@ -23520,6 +23574,7 @@ var PGP = function() {
       }
       if (typeof op.data.description !== "undefined") {
         encryptData(op.data.description).then(function(cipher){
+          console.log('encrypted description')
           encryptDesc.resolve(cipher.data)
         })
       } else {
@@ -23527,6 +23582,7 @@ var PGP = function() {
       }
       if (typeof op.undo_data.previous_name !== "undefined") {
         encryptData(op.undo_data.previous_name).then(function(cipher){
+          console.log('encrypted previous_name')
           encryptPrevName.resolve(cipher.data)
         })
       } else {
@@ -23534,30 +23590,30 @@ var PGP = function() {
       }
       if (typeof op.undo_data.previous_description !== "undefined") {
         encryptData(op.undo_data.previous_description).then(function(cipher){
+        console.log('encrypted previous_description')
           encryptPrevDesc.resolve(cipher.data)
         })
       } else {
           encryptPrevDesc.resolve(null)
       }
 
-      return promise
+      return deferred
   }
 
   return {
     init : function () {
       // openpgp.initWorker("/static/js/openpgp.worker.min.js")
-      openpgp.config.versionstring = ''
-      openpgp.config.commentstring = ''
-      keys.push({
-          name: KEY_NAME,
-          privkey: PUBLIC_KEY,
-          pubkey: PRIVATE_KEY,
-      })
+      // openpgp.config.versionstring = ''
+      // openpgp.config.commentstring = ''
     },
     encryptOperations : encryptOperations,
     encryptData: encryptData,
+    decryptData: decryptData,
+    key: PGP_KEY,
   }
 }()
 PGP.init()
 
 allJSFinishedLoadingCallback();
+
+var _DEFERREDS = [];

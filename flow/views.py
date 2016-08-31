@@ -191,6 +191,7 @@ def perform_operation(op_type, data, undo_data, timestamp, user_id):
 			project.modified = timestamp
 
 		if op_type == 'create':
+			print 'creating project', data
 			project = Project(user_id=user_id)
 			if data.get('projectid', None):
 					uuid_id = data.get('projectid')

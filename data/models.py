@@ -32,7 +32,7 @@ class Project(models.Model):
 
 	user = models.ForeignKey(User, related_name='projects')
 	priority = models.IntegerField(default=0)
-	created = models.DateTimeField(auto_now_add=True)
+	created = models.DateTimeField(auto_now_add=True, null=True)
 	modified = models.PositiveIntegerField(default=0)
 
 	name = models.TextField(blank=True, null=True)
