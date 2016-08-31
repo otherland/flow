@@ -35,7 +35,7 @@ class Project(models.Model):
 	created = models.DateTimeField(auto_now_add=True, null=True)
 	modified = models.PositiveIntegerField(default=0)
 
-	name = models.TextField(blank=True, null=True)
+	name = models.TextField(default='')
 	description = models.TextField(blank=True, null=True)
 	complete = models.PositiveIntegerField(blank=True, null=True)
 	deleted = models.PositiveIntegerField(blank=True, null=True)

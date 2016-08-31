@@ -1499,40 +1499,10 @@ function allJSFinishedLoadingCallback() {
     initializeLocalStorageAndGetInitializationData();
   }
 }
-function decryptTree(data) {
-  function decryptChild(project) {
-    var deferred = $.Deferred()
-    deferreds.push(deferred)
-    if (typeof project.ch === 'object') {
-      (function(){
-        for (var i = 0; i < project.ch.length; i++) {
-          decryptChild(project.ch[i])
-        }
-      })()
-    }
-    if (project.nm !== null && project.nm.length > 0) {
-      PGP.decryptData(project.nm).then(function(cipher){
-        console.log('success decrypt', cipher.data)
-        project.nm = cipher.data
-        deferred.resolve()
-      })
-    } else {
-      deferred.resolve()
-    }
-  }
-
-  var children = data.projectTreeData.mainProjectTreeInfo.rootProjectChildren
-  var deferreds = []
-  $.when.all( deferreds ).then(function(){
+function initializationDataFetchFinishedCallback(data, e) {
+  PGP.decryptTree(data).then(function(){
     setupGlobalVariables(data, e)
   })
-  for (var i = 0; i < children.length; i++) {
-    decryptChild(children[i])
-  }
-}
-function initializationDataFetchFinishedCallback(data, e) {
-  // decryptTree(data)
-    setupGlobalVariables(data, e)
 }
 function setupGlobalVariables(a, e) {
   if (e === undefined) {
@@ -1540,38 +1510,7 @@ function setupGlobalVariables(a, e) {
   }
   try {
     if (a === null) {
-      if (APPCACHE_ENABLED) {
-        window.location = "/update_appcache";
-        return;
-      } else {
-        if (IS_PACKAGED_APP) {
-          showLoginRegisterScreen();
-          return;
-        } else {
-          throw Error("Initialization data load failed.");
-        }
-      }
-    }
-    if (IS_PACKAGED_APP) {
-      if (e !== null) {
-        utils.debugMessage("Initialization data came from IndexedDB.");
-        if (date_time.getCurrentTimeInMS() > e + UPDATE_INITIALIZATION_DATA_EVERY_N_DAYS * 24 * 60 * 60 * 1E3) {
-          utils.debugMessage('Initialization data from IndexedDB is "stale"; fetching it again.');
-          (function() {
-            fetchInitializationData(function(p) {
-              if (p !== null) {
-                utils.debugMessage("Initialization data re-fetch succeeded; writing it to IndexedDB.");
-                writeInitializationDataToIndexedDB(p);
-              } else {
-                utils.debugMessage("Initialization data re-fetch failed.");
-              }
-            });
-          })();
-        }
-      } else {
-        utils.debugMessage("Initialization data came from server; writing it to IndexedDB.");
-        writeInitializationDataToIndexedDB(a);
-      }
+      throw Error("Initialization data load failed.");
     }
     var j = a.globals;
     var h = a.projectTreeData;
@@ -23520,9 +23459,7 @@ var PGP = function() {
 
   function encryptOperations (operations) {
       var deferreds = _DEFERREDS
-      for (var i = 0; i < operations.length; i++) {
-          var op = operations[i];
-          (function(){
+      operations.forEach(function(op){
             var deferred = $.Deferred();
             switch (op.type) {
               case "edit" :
@@ -23551,8 +23488,7 @@ var PGP = function() {
                 deferred.resolve(op)
                 break
             }
-          })()
-      }
+      })
       return $.when.all( deferreds )
   }
 
@@ -23599,16 +23535,43 @@ var PGP = function() {
 
       return deferred
   }
-
+  function decryptTree(data) {
+    function decryptChild(project) {
+      var deferred = $.Deferred()
+      deferreds.push(deferred)
+      if (typeof project.ch === 'object') {
+        (function(){
+          for (var i = 0; i < project.ch.length; i++) {
+            decryptChild(project.ch[i])
+          }
+        })()
+      }
+      if (project.nm !== null && project.nm.length > 0) {
+        decryptData(project.nm).then(function(cipher){
+          console.log('success decrypt', cipher.data)
+          project.nm = cipher.data
+          deferred.resolve()
+        })
+      } else {
+        deferred.resolve()
+      }
+    }
+    var deferreds = []
+    data.projectTreeData.mainProjectTreeInfo.rootProjectChildren.forEach(function(child){
+      decryptChild(child)
+    })
+    return $.when.all( deferreds )
+  }
   return {
     init : function () {
       // openpgp.initWorker("/static/js/openpgp.worker.min.js")
-      // openpgp.config.versionstring = ''
-      // openpgp.config.commentstring = ''
+      openpgp.config.versionstring = '0'
+      openpgp.config.commentstring = '0'
     },
     encryptOperations : encryptOperations,
     encryptData: encryptData,
     decryptData: decryptData,
+    decryptTree: decryptTree,
     key: PGP_KEY,
   }
 }()
