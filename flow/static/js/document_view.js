@@ -71,39 +71,7 @@ var localstorage_detect = function() {
     }
   };
 }();
-var app_detect = function() {
-  function a() {
-    e = true;
-    if (localstorage_detect.localStorageSupported()) {
-      var f = localStorage.getItem(h);
-      if (f !== null) {
-        f = parseInt(f);
-        if (typeof IOS_APP_VERSION === "undefined") {
-          window.IOS_APP_VERSION = f;
-        }
-        localStorage.removeItem(h);
-      }
-    }
-    j = typeof IOS_APP_VERSION !== "undefined";
-  }
-  var e = false;
-  var j = null;
-  var h = "IOS_APP_VERSION";
-  return{
-    isIOSApp : function() {
-      if (!e) {
-        a();
-      }
-      return j;
-    },
-    getIOSAppVersion : function() {
-      if (!e) {
-        a();
-      }
-      return IOS_APP_VERSION;
-    }
-  };
-}();
+
 
 
 (function() {
@@ -1096,21 +1064,6 @@ $.ajaxPrefilter(function(a) {
   }
 });
 
-if (IS_IOS && FULL_OFFLINE_ENABLED) {
-  if (!localstorage_detect.localStorageSupported()) {
-    if (localstorage_detect.permissionDeniedAccessingLocalStorage()) {
-      DO_NOT_INITIALIZE = true;
-      setTimeout(function() {
-        apphooks.exitWhenBackgrounded();
-        setTimeout(function() {
-          for (;;) {
-            alert('WorkFlowy cannot load properly if you are blocking cookies. To re-enable them, go to Settings -> Safari, and change the "Block Cookies" setting to something other than "Always". When you run the app again, it should work.');
-          }
-        }, 0);
-      }, 0);
-    }
-  }
-}
 function fetchInitializationData(callback, e) {
   if (e === undefined) {
     e = false;
@@ -1222,26 +1175,11 @@ function setupGlobalVariables(a, e) {
     handleExceptionDuringInitialization(k);
   }
 }
-
 function loadFontAndThemeCSS(a, e) {
-  function j() {
-    h++;
-    if (h === 2) {
-      READY_FOR_DOCUMENT_READY = true;
-      if (DOCUMENT_READY_TRIGGERED) {
-        documentReadyFunc();
-      }
-    }
+  READY_FOR_DOCUMENT_READY = true;
+  if (DOCUMENT_READY_TRIGGERED) {
+    documentReadyFunc();
   }
-  var h = 0;
-  appearance.changeCSS({
-    type : "theme",
-    name : a
-  }, j);
-  appearance.changeCSS({
-    type : "font",
-    name : e
-  }, j);
 }
 function documentReadyFunc() {
 
@@ -1279,38 +1217,18 @@ function documentReadyFunc() {
       selectAndSearchUsingLocation(location_history.getCurrentLocation());
       push_poll.init();
 
-      if (!IS_MOBILE) {
-        if (FIRST_LOAD_FLAGS.showPrivateSharingNotice) {
-          ui_sugar.showAlertDialog("<strong>You are viewing a privately shared WorkFlowy.</strong><br><br>If you would like to add it to your personal account for easy access, click the button below. (Note that this button is always available in the lower right when viewing a shared list.)", "Notice", false, [{
-            text : "Add it to my account",
-            click : function() {
-              $(this).dialog("close");
-              addSharedSubtreeToAccount();
-            }
-          }]);
-        }
-      }
-
       if (IS_ANDROID) {
         if (!IS_CHROME) {
           showMessage('You are not using Chrome, which is our officially supported Android browser. <a href="https://play.google.com/store/apps/details?id=com.android.chrome">Download Chrome</a> for a much better experience.');
         }
       }
-      setInterval(function() {
-        _gaq.push(["_trackEvent", "Usage Statistic", "30 minute ping"]);
-      }, 18E5);
     } catch (j) {
       handleExceptionDuringInitialization(j);
     } finally {
-      if (app_detect.isIOSApp()) {
-        $("#loadingScreen").hide();
-      } else {
         var h = IS_MOBILE ? 400 : 150;
         setTimeout(function() {
           $("#loadingScreen").fadeOut(h);
         }, 0);
-      }
-      apphooks.notifyDocumentReady();
     }
   }
 }
@@ -1318,12 +1236,7 @@ $(document).ready(documentReadyFunc);
 function handleExceptionDuringInitialization(a) {
   var e = String(a);
   utils.debugMessage("Error encountered during initialization: '" + e + "'");
-  if (window._gaq !== undefined) {
-    _gaq.push(["_trackEvent", "Javascript Errors (on init)", e, SETTINGS.username.value]);
-  }
-  if (IS_CHROME_APP) {
-    gaTracker.sendEvent("[Chrome App] Javascript Errors (on init)", e, SETTINGS.username.value);
-  }
+
   if (a instanceof userstorage.InitializationError) {
     setTimeout(function() {
       clearUserStorage(reloadPageFromServer);
@@ -1431,7 +1344,7 @@ jQuery.fn.setPositionAndDimensionsForPage = function() {
     f = left_bar.getMinimumHorizontalBounds();
     var n = left_bar.getPostTransitionHorizontalBounds();
     f = e - f.right;
-    f = IS_CHROME_APP ? f : Math.min(f, 700 + j);
+    f = Math.min(f, 700 + j);
     e = n.right + Math.max(Math.round((e - f - n.right) / 2), 0);
     j = f - j;
     setPagePositionAndDimensions(a, j, e);
@@ -2168,12 +2081,7 @@ function addEvents() {
     }
   };
   window.onerror = function(h, f, n) {
-    if (IS_CHROME_APP) {
-      gaTracker.sendEvent("[Chrome App] Javascript Errors", h, SETTINGS.username.value + ": " + f + ":" + n);
-    }
-    if (window._gaq !== undefined) {
-      _gaq.push(["_trackEvent", "Javascript Errors", h, SETTINGS.username.value + ": " + f + ":" + n]);
-    }
+
   };
   $(window).bind("resize", function() {
     getActivePage().setPositionAndDimensionsForPage();
@@ -2206,10 +2114,8 @@ function addEvents() {
       }
     });
   } else {
-    if (!app_detect.isIOSApp()) {
       $(window).focus(windowFocusHandler);
       $(window).blur(windowBlurHandler);
-    }
   }
   $(".saveButton.saveNow").clickOrTapHandler({
     event : function() {
@@ -2630,9 +2536,7 @@ function addEvents() {
       if (f.is(".contentLink--image")) {
         window.open(n)
       } else {
-        if (!app_detect.isIOSApp() || app_detect.getIOSAppVersion() >= 6) {
           window.open(n);
-        }
       }
       return false;
     }
@@ -2925,7 +2829,9 @@ function addEvents() {
     position : ["center", 200],
     title : "Add shared list"
   });
-
+  if (APPCACHE_ENABLED) {
+    appcache_helper.init();
+  }
   search.init();
   moving.init();
   item_select.init();
@@ -3986,6 +3892,14 @@ function addGlobalKeyboardShortcuts() {
     return false;
   });
 
+  if (APPCACHE_ENABLED) {
+    if (ON_DEVELOPMENT_SERVER) {
+      h.addHandlerForShortcuts("keydown", "shift+a", ["ctrl", "meta"], function() {
+        forceReloadAppCache();
+        return false;
+      });
+    }
+  }
   h.addHandlerForShortcuts("keydown", "return", ["ctrl", "meta"], createDoNothingWhenInLeftBarRecentSwitcherModeShortcutEventHandler(function() {
     completeItemSelectedProjects();
     return false;
@@ -5265,7 +5179,6 @@ jQuery.fn.duplicateIt = function(a, e) {
     return this;
   }
 };
-
 function closeAllDialogs() {
   $(".ui-dialog:visible > .ui-dialog-content").dialog("close");
 }
@@ -5363,7 +5276,6 @@ function addSharedSubtreeToAccount() {
                 }
               }
             });
-            _gaq.push(["_trackEvent", "Interaction", "Added shared subtree"]);
           } else {
             var n = undefined;
             switch(h.error) {
@@ -5397,19 +5309,22 @@ function refreshVisibleChildrenUnderSelectedForAddButton(a) {
   }
 }
 function reloadPageFromServer() {
+  if (APPCACHE_ENABLED) {
+    forceReloadAppCache();
+  } else {
     window.location.reload(true);
+  }
 }
 function forceReloadAppCache() {
   if (localstorage_helper.localStorageSupported()) {
     localstorage_helper.write("next", window.location.pathname + window.location.search + window.location.hash);
   }
-  apphooks.notifyThatAppCacheIsNowUncached();
   window.location = "/force_update_appcache";
 }
 function checkIfMostRecentlyOpenedWindowIdChanged() {
   if (localstorage_helper.localStorageSupported()) {
     var a = localstorage_helper.read(MOST_RECENTLY_OPENED_WINDOW_ID_KEY);
-    if (!(!FULL_OFFLINE_ENABLED || (!APPCACHE_ENABLED || app_detect.isIOSApp()))) {
+    if (!(!FULL_OFFLINE_ENABLED || (!APPCACHE_ENABLED ))) {
       if (WINDOW_ID !== a) {
         window.onbeforeunload = null;
         window.location = "/window_preempted";
@@ -5996,6 +5911,94 @@ var userstorage = function() {
     PersistentDict : u,
     PersistentOperationQueue : s,
     PersistentOperationTransactionQueue : b
+  };
+}();
+var appcache_helper = function() {
+  function a(o, c) {
+    var g = 0;
+    for (;g < o.length;g++) {
+      (0, o[g])(c);
+    }
+  }
+  function e() {
+    try {
+      window.applicationCache.update();
+    } catch (o) {
+      utils.debugMessage(o);
+      utils.debugMessage("Exception thrown when applicationCache.update() called. Update failed.");
+      a(l, false);
+      a(q, false);
+      l = [];
+      q = [];
+      n = false;
+    }
+  }
+  function j(o) {
+    if (o === undefined) {
+      o = null;
+    }
+    if (f()) {
+      if (o !== null) {
+        q.push(o);
+      }
+      n = true;
+    } else {
+      if (o !== null) {
+        l.push(o);
+      }
+      e();
+    }
+  }
+  function h(o) {
+    if (f()) {
+      l.push(function() {
+        h(o);
+      });
+    } else {
+      utils.debugMessage("Marking cache manifest dirty on server so we can update app cache");
+      $.ajax({
+        url : "/mark_cache_manifest_dirty",
+        success : function() {
+          j(o);
+        }
+      });
+    }
+  }
+  function f() {
+    return window.applicationCache.status === window.applicationCache.CHECKING || window.applicationCache.status === window.applicationCache.DOWNLOADING;
+  }
+  var n = false;
+  var l = [];
+  var q = [];
+  return{
+    init : function() {
+      window.applicationCache.onupdateready = window.applicationCache.oncached = window.applicationCache.onobsolete = window.applicationCache.onnoupdate = function() {
+        a(l, window.applicationCache.status === window.applicationCache.UPDATEREADY);
+        l = q;
+        q = [];
+        if (n) {
+          n = false;
+          e();
+        } else {
+        }
+      };
+      window.applicationCache.onerror = function() {
+        utils.pushArray(l, q);
+        q = [];
+        if (n || l.length > 0) {
+          n = false;
+          e();
+        }
+      };
+    },
+    update : j,
+    markCacheManifestDirtyAndThenUpdate : h,
+    swapCache : function() {
+      window.applicationCache.swapCache();
+    },
+    isCurrentlyDownloading : function() {
+      return window.applicationCache.status === window.applicationCache.DOWNLOADING;
+    }
   };
 }();
 var dom_utils = function() {
@@ -8719,7 +8722,6 @@ var project_tree = function() {
       return Math.floor(b / 1E3 - this.dateJoinedTimestampInSeconds);
     },
     initializeProjectTree : function() {
-      console.log('initializeProjectTree');
       this.projectIdToProjectMap = new project_ids.ProjectIdMap;
       this.sharedSubtreePlaceholders = {};
       this.sharedProjectIdToSharedProjectMap = {};
@@ -11388,10 +11390,10 @@ var operations = function() {
         return d;
       }
       if (c.type === "move" && (g.type === "move" && c.data.projectid === g.data.projectid)) {
-        return d = j(g, c.undo_data);
+        return d = addUndoData(g, c.undo_data);
       }
       if (c.type === "bulk_move" && (g.type === "bulk_move" && c.data.projectids_json === g.data.projectids_json)) {
-        return d = j(g, c.undo_data);
+        return d = addUndoData(g, c.undo_data);
       }
       return null;
     },
@@ -11679,11 +11681,6 @@ var push_poll = function() {
               showMessage(z.dropdown_message, true);
             }
             scheduleNextPushAndPoll();
-            if (w) {
-              if (!project_tree.getAllProjectTreesHelper().havePendingOperations()) {
-                apphooks.notifyThatAllChangesAreSaved();
-              }
-            }
           }
           if (A == null) {
             handleError();
@@ -11727,7 +11724,6 @@ var push_poll = function() {
       var operations = push_poll_data[0].operations;
       if (typeof operations !== "undefined") {
         (function(){
-          console.log('found operations!', operations)
           PGP.encryptOperations(operations).then(function(updated_operations) {
             push_poll_data[0].operations = updated_operations
             payload.push_poll_data = JSON.stringify(push_poll_data);
@@ -11764,9 +11760,22 @@ var push_poll = function() {
       }
       t();
     };
-    fetchInitializationData(function(A) {
-      y(A);
-    }, true);
+    if (FULL_OFFLINE_ENABLED && !IS_PACKAGED_APP) {
+      appcache_helper.markCacheManifestDirtyAndThenUpdate(function(A) {
+        if (A) {
+          utils.debugMessage("App cache updated. Swapping to new cache and loading new project tree data.");
+          appcache_helper.swapCache();
+          fetchInitializationData(y);
+        } else {
+          utils.debugMessage("Failed to update app cache.");
+          t();
+        }
+      });
+    } else {
+      fetchInitializationData(function(A) {
+        y(A);
+      }, true);
+    }
   }
   var q = 5E3;
   var o = 5E3;
@@ -11903,25 +11912,10 @@ var location_history = function() {
     return F;
   }
   function n() {
-      if (app_detect.isIOSApp()) {
-        if (userstorage.isEnabled()) {
-          B = userstorage.read(b);
-          if (B !== null) {
-            $.address.value(B);
-          }
-        }
-      }
       return q();
   }
   function l() {
-      if (app_detect.isIOSApp()) {
-        if (userstorage.isEnabled()) {
-          setTimeout(function() {
-            var J = window.location.hash.substring(1);
-            userstorage.write(b, J);
-          }, 0);
-        }
-      }
+
   }
   function q() {
     var B = $.address.pathNames();
@@ -12418,7 +12412,6 @@ var undo_redo = function() {
       }
       if (o !== null) {
         utils.debugAlert("Trying to start operation batch while one is already in progress.");
-        _gaq.push(["_trackEvent", "Miscellaneous", "Trying to start operation batch while one is already in progress."]);
       } else {
         if (!g) {
           saveEditingContent();
@@ -12437,7 +12430,6 @@ var undo_redo = function() {
     addOperationToCurrentBatch : function(g, d) {
       if (o === null) {
         ui_sugar.showAlertDialog("Trying to add to operation batch while none are in progress.");
-        _gaq.push(["_trackEvent", "Miscellaneous", "Trying to add to operation batch while none are in progress."]);
       }
       o.operationInfos.push({
         operation : g,
@@ -12453,7 +12445,6 @@ var undo_redo = function() {
       }
       if (o === null) {
         utils.debugAlert("Trying to finish operation batch while none are in progress.");
-        _gaq.push(["_trackEvent", "Miscellaneous", "Trying to finish operation batch while none are in progress."]);
       } else {
         var k = o;
         o = null;
@@ -16996,42 +16987,7 @@ var item_select = function() {
     blurAndClearTextSelection : g
   };
 }();
-var appearance = function() {
-  function h(n, l, q) {
-    if (q === undefined) {
-      q = false;
-    }
-    q = f(n.type, n.name);
-    var o = n.type === "font" ? "font_css" : "theme_css";
-    q = {
-      url : q,
-      cache : true,
-      dataType : "text",
-      success : function(c) {
-        if (c != null) {
-          c = $('<style id="' + o + '" >' + c + "</style>");
-          $("head > #" + o).replaceWith(c);
-          l(n.type);
-        }
-      }
-    };
-    q.WF_isForStaticResource = true;
-    $.ajax(q);
-  }
-  function f(n, l) {
-    if (n === "font") {
-      var q = "";
-      var o = "fonts";
-    } else {
-      q = IS_MOBILE ? "mobile." : "desktop.";
-      o = "themes";
-    }
-    return ON_DEVELOPMENT_SERVER ? "/get_css/" + l + "?type=" + n : "/static/css/" + o + "/" + q + l + ".css";
-  }
-  return{
-    changeCSS : h
-  };
-}();
+
 
 var date_time = function() {
   var a = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -17649,92 +17605,6 @@ var ui_sugar = function() {
   };
 }();
 
-var apphooks = function() {
-  function a(f, n) {
-    if (n === undefined) {
-      n = null;
-    }
-    var l = f + ":";
-    if (n !== null) {
-      l += "#iOS#" + n;
-    }
-    var q = document.createElement("IFRAME");
-    q.setAttribute("src", l);
-    document.documentElement.appendChild(q);
-    q.parentNode.removeChild(q);
-  }
-  function e() {
-    return project_tree.getAllProjectTreesHelper().haveUnsavedData();
-  }
-  function j() {
-    if (e()) {
-      push_poll.scheduleNextPushAndPoll(true);
-    }
-  }
-  function h() {
-  }
-  return{
-    haveUnfinishedBusiness : function() {
-      return e();
-    },
-    finishAllBusiness : function() {
-      j();
-    },
-    shouldWaitForCustomDocumentReady : function() {
-      return true;
-    },
-    haveUnsavedChanges : e,
-    saveImmediately : j,
-    notifyDocumentReady : function() {
-      if (app_detect.isIOSApp()) {
-        if (app_detect.getIOSAppVersion() >= 4) {
-          a("ios-document-ready");
-        }
-      }
-    },
-    notifyThatAllChangesAreSaved : function() {
-      if (app_detect.isIOSApp()) {
-        if (app_detect.getIOSAppVersion() < 3) {
-          a("ios-all-changes-saved");
-        } else {
-          h();
-        }
-      }
-    },
-    notifyThatAppCacheIsNowCached : function() {
-      if (app_detect.isIOSApp()) {
-        if (app_detect.getIOSAppVersion() >= 3) {
-          a("ios-app-cached");
-        }
-        h();
-      }
-    },
-    notifyThatAppCacheIsNowUncached : function() {
-      if (app_detect.isIOSApp()) {
-        if (app_detect.getIOSAppVersion() >= 3) {
-          a("ios-app-uncached");
-        }
-      }
-    },
-    notifyAppFocused : function() {
-      if (app_detect.isIOSApp()) {
-        windowFocusHandler();
-      }
-    },
-    notifyAppBlurred : function() {
-      if (app_detect.isIOSApp()) {
-        windowBlurHandler();
-      }
-    },
-    exitWhenBackgrounded : function() {
-      if (app_detect.isIOSApp()) {
-        if (app_detect.getIOSAppVersion() >= 5) {
-          a("ios-exit-when-backgrounded");
-        }
-      }
-    }
-  };
-}();
 var ranges = function() {
   function a(f, n) {
     var l = 0;
@@ -20381,7 +20251,6 @@ var PGP = function() {
         data: data,
         publicKeys: openpgp.key.readArmored(key.pubkey).keys
     }
-    console.log('Encrypting data')
     return openpgp.encrypt(options)
   }
 
@@ -20422,7 +20291,6 @@ var PGP = function() {
                         op.undo_data.previous_description = encryptPrevDesc
                     }
                     deferred.resolve( op )
-                    console.log('operation complete', op.data)
                 })
                 deferreds.push(deferred)
                 break
@@ -20445,7 +20313,6 @@ var PGP = function() {
 
       if (typeof op.data.name !== "undefined") {
         encryptData(op.data.name).then(function(cipher){
-          console.log('encrypted name')
           encryptName.resolve(cipher.data)
         })
       } else {
@@ -20453,7 +20320,6 @@ var PGP = function() {
       }
       if (typeof op.data.description !== "undefined") {
         encryptData(op.data.description).then(function(cipher){
-          console.log('encrypted description')
           encryptDesc.resolve(cipher.data)
         })
       } else {
@@ -20461,7 +20327,6 @@ var PGP = function() {
       }
       if (typeof op.undo_data.previous_name !== "undefined") {
         encryptData(op.undo_data.previous_name).then(function(cipher){
-          console.log('encrypted previous_name')
           encryptPrevName.resolve(cipher.data)
         })
       } else {
@@ -20469,7 +20334,6 @@ var PGP = function() {
       }
       if (typeof op.undo_data.previous_description !== "undefined") {
         encryptData(op.undo_data.previous_description).then(function(cipher){
-        console.log('encrypted previous_description')
           encryptPrevDesc.resolve(cipher.data)
         })
       } else {
@@ -20489,7 +20353,6 @@ var PGP = function() {
       }
       if (project.nm !== null && project.nm.length > 0) {
         decryptData(project.nm).then(function(cipher){
-          console.log('success decrypt', cipher.data)
           project.nm = cipher.data
           deferred.resolve()
         })
@@ -20506,7 +20369,6 @@ var PGP = function() {
   return {
     init : function (key, pass) {
       // openpgp.initWorker("/static/js/openpgp.worker.min.js")
-      console.log('init PGP', key, pass)
       PGP_KEY = key
       KEY_PASS = pass
       openpgp.config.versionstring = '0'
