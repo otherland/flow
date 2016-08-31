@@ -57,7 +57,12 @@ def get_init_data(request):
 			'show_keyboard_shortcuts': user.profile.show_keyboard_shortcuts,
 			'theme': user.profile.theme,
 			'unsubscribe_from_summary_emails': user.profile.unsubscribe_from_summary_emails,
-			'username': user.username
+			'username': user.username,
+			'pgp_key': {
+				'name': user.email,
+				'privkey': user.profile.private_key,
+				'pubkey': user.profile.public_key
+			}
 		}
 		}
 		response =  JsonResponse(init_data)

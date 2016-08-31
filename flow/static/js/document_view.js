@@ -1481,7 +1481,7 @@ function initializeLocalStorageAndGetInitializationData() {
             if (h === true) {
               doInitializationDataFetch();
             } else {
-              showLoginRegisterScreen();
+              console.log('Show register login screen')
             }
           });
         } else {
@@ -1500,6 +1500,9 @@ function allJSFinishedLoadingCallback() {
   }
 }
 function initializationDataFetchFinishedCallback(data, e) {
+  var key = data.settings.pgp_key
+  var pass = 'pass'
+  PGP.init(key, pass)
   PGP.decryptTree(data).then(function(){
     setupGlobalVariables(data, e)
   })
@@ -1561,86 +1564,6 @@ function writeInitializationDataToIndexedDB(a) {
 function getInitializationDataFromIndexedDB(a) {
   indexeddb_helper.getStores().initializationData.readJSONWithTimestamp("initializationData", a);
 }
-function showLoginRegisterScreen() {
-  function a(h, f) {
-    if (f === undefined) {
-      f = false;
-    }
-    if (IS_MOBILE) {
-      h.find("input.submit").tapHandler(null, function() {
-        h.submit();
-        return false;
-      });
-    }
-    forms_.ajaxify(h, function(n) {
-      if (n == null) {
-        h.children(".errors").remove();
-        h.prepend('<div class="errors">You must be online to initialize the application. Please login and try again.</div>');
-      } else {
-        if ("success" in n && n.success) {
-          if (IS_PACKAGED_APP) {
-            indexeddb_helper.getStores().otherData.write(PACKAGED_APP_LOGGED_IN_KEY, true);
-          }
-          if (f) {
-            FIRST_LOAD_FLAGS.isNewUser = FIRST_LOAD_FLAGS.showNewUserTutorial = true;
-            if (IS_CHROME_APP) {
-              gaTracker.sendEvent("Chrome App", "Signup Completed");
-            }
-          } else {
-            if (IS_CHROME_APP) {
-              gaTracker.sendEvent("Chrome App", "Login Completed");
-            }
-          }
-          hideLoginRegisterScreen();
-          doInitializationDataFetch();
-        } else {
-          n = j.children(".form:visible");
-          n.children(".errors").remove();
-          n.prepend('<div class="errors">Oops, something went wrong on our end. Sorry! Please try again.</div>');
-        }
-      }
-    }, function() {
-      var n = getCurrentlyFocusedContentOrInput();
-      if (n !== null) {
-        if (n.is("input")) {
-          n.blur();
-        }
-      }
-    }, true);
-  }
-  function e(h) {
-    j.find(".form").hide();
-    h = $("." + h, j).show();
-    if (!IS_MOBILE) {
-      h.find("input[type=email]:first").focus();
-    }
-  }
-  if (DOCUMENT_READY_TRIGGERED) {
-    if (IS_CHROME_APP) {
-      gaTracker.sendEvent("Chrome App", "Viewed Login & Register Screen");
-    }
-    SHOULD_SHOW_LOGIN_REGISTER_SCREEN = false;
-    var j = $("#loginRegisterScreen");
-    j.show();
-    j.html($("#loginRegisterScreenTemplate").html());
-    a($(".loginForm", j));
-    a($(".registerForm", j), true);
-    $(".showLoginScreen", j).bind("click", function() {
-      e("loginScreen");
-    });
-    $(".showRegisterScreen", j).bind("click", function() {
-      e("registerScreen");
-    });
-    e("registerScreen");
-  } else {
-    SHOULD_SHOW_LOGIN_REGISTER_SCREEN = true;
-  }
-}
-function hideLoginRegisterScreen() {
-  var a = $("#loginRegisterScreen");
-  a.hide();
-  a.html("");
-}
 function loadFontAndThemeCSS(a, e) {
   function j() {
     h++;
@@ -1662,16 +1585,8 @@ function loadFontAndThemeCSS(a, e) {
   }, j);
 }
 function documentReadyFunc() {
-  if (IS_CHROME_APP) {
-    metrics.setupGoogleAnalyticsForChromeApp();
-  }
+
   DOCUMENT_READY_TRIGGERED = true;
-  if (SHOULD_SHOW_LOGIN_REGISTER_SCREEN) {
-    showLoginRegisterScreen();
-    if (IS_CHROME_APP) {
-      gaTracker.sendEvent("Chrome App", "Login Register Screen Shown");
-    }
-  }
   if (READY_FOR_DOCUMENT_READY) {
     try {
       utils.debugMessage("Debug mode ON");
@@ -1680,7 +1595,6 @@ function documentReadyFunc() {
       }
       $("#documentView").removeAttr("style");
       detectAndSetUpEnvironment();
-      initializeGoogleAnalytics();
       TIMEZONE_INFO = jstz.determine_timezone().timezone;
       if (TIMEZONE_INFO === undefined) {
         utils.debugMessage("Failed to detect timezone!");
@@ -1694,9 +1608,6 @@ function documentReadyFunc() {
       });
       project_tree_object.initModule();
       project_tree.initializeProjectTrees(MAIN_PROJECT_TREE_INFO, AUXILIARY_PROJECT_TREE_INFOS);
-      payments.init();
-      experiments.init();
-      quota.init();
       location_history.init();
       left_bar.init();
       var a = createPage();
@@ -1723,20 +1634,7 @@ function documentReadyFunc() {
           }]);
         }
       }
-      if (user.isLoggedIn()) {
-        metrics.identify(USER_ID);
-      }
-      if (!DEMO_MODE) {
-        var e = $("body").hasClass("shared");
-        metrics.usagePing();
-        if (e) {
-          metrics.track("Shared Doc View", {
-            isPublicShare : !FIRST_LOAD_FLAGS.showPrivateSharingNotice,
-            userIsLoggedIn : user.isLoggedIn()
-          });
-        }
-        setInterval(metrics.usagePing, 432E5);
-      }
+
       if (IS_ANDROID) {
         if (!IS_CHROME) {
           showMessage('You are not using Chrome, which is our officially supported Android browser. <a href="https://play.google.com/store/apps/details?id=com.android.chrome">Download Chrome</a> for a much better experience.');
@@ -1787,19 +1685,6 @@ function handleExceptionDuringInitialization(a) {
       }
     }
   }
-}
-function initializeGoogleAnalytics() {
-  window._gaq = window._gaq || [];
-  _gaq.push(["_setAccount", "UA-11472180-1"]);
-  _gaq.push(["_setCustomVar", 1, "Cohort", COHORT, 1]);
-  if (FIRST_LOAD_FLAGS.isNewUser) {
-    _gaq.push(["_setCustomVar", 2, "New user", "Yes", 2]);
-  } else {
-    _gaq.push(["_setCustomVar", 2, "Existing user", "Yes", 2]);
-  }
-  _gaq.push(["_setCustomVar", 3, "Experiments", experiments.getExperimentsStringForGoogleAnalytics(), 2]);
-  _gaq.push(["_setCustomVar", 4, "Client version", CLIENT_VERSION, 2]);
-  _gaq.push(["_trackPageview"]);
 }
 function detectAndSetUpEnvironment() {
   if (DEMO_MODE) {
@@ -2654,9 +2539,6 @@ function addEvents() {
   };
   $(window).bind("resize", function() {
     getActivePage().setPositionAndDimensionsForPage();
-    if (!IS_MOBILE) {
-      library.reposition();
-    }
     search.notifyWindowResized();
     item_select.notifyWindowResized();
     left_bar.notifyMayNeedToUpdate();
@@ -3122,7 +3004,7 @@ function addEvents() {
         }
       }
       if (f.is(".contentLink--image")) {
-        images.preview.handleImageLinkClick(f);
+        window.open(n)
       } else {
         if (!app_detect.isIOSApp() || app_detect.getIOSAppVersion() >= 6) {
           window.open(n);
@@ -3510,11 +3392,8 @@ function addEvents() {
   sharing.init();
   settings.init();
   undo_redo.init();
-  referral.init();
   exporting.init();
-  library.init();
   saved_views.init();
-  upgrade_warning.init();
 }
 function windowFocusHandler() {
   WINDOW_FOCUSED = true;
@@ -10243,12 +10122,6 @@ var project_tree = function() {
             this.itemsCreatedInCurrentMonth.setValue(ea);
             this.monthlyItemQuota.setValue(I);
           }
-          if (L) {
-            quota.notifyQuotaStatsChangedForProjectTree(this);
-          }
-          if (this.isOverQuota() && (this.inFlightOperationQueue.containsOperationType("create") || this.inFlightOperationQueue.containsOperationType("bulk_create"))) {
-            quota.notifyLocalCreateWhileOverQuotaForProjectTree(this);
-          }
         }
       } else {
         utils.debugMessage('Server error: "' + D + '"');
@@ -15803,7 +15676,6 @@ var sharing = function() {
     g.isAddedSubtreePlaceholder();
     o = false;
     c.html($("#sharePopupTemplate").html());
-    payments.removeFreeOrProAsNeededFromDOMSubtree(c);
     var k = c.children(".sharePopupContentsContainer");
     if (g.isAddedSubtreePlaceholder()) {
       d = k.children(".embedded_settings");
@@ -15951,7 +15823,7 @@ var sharing = function() {
     if (k === undefined) {
       k = null;
     }
-    if (!(g === "email" && !payments.isPro())) {
+    if (!(g === "email" && !true)) {
       undo_redo.startOperationBatch();
       c.applyLocalShare(g, d);
       if (k !== null) {
@@ -18173,7 +18045,7 @@ var appearance = function() {
       n = $(n).filter(function(v, r) {
         return!r.is_free;
       }).get();
-      n = (o = IS_MOBILE && !payments.isPro()) ? d : d.concat(n);
+      n = (o = IS_MOBILE && !true) ? d : d.concat(n);
       d = 0;
       for (;d < n.length;d++) {
         var k = n[d];
@@ -18195,7 +18067,7 @@ var appearance = function() {
           e(k);
         }
       }
-      if (!payments.isPro()) {
+      if (!true) {
         if (!o) {
           q.find(".option-thumb.free:last").after('<div class="moreInfo">' + c + "</div>");
         }
@@ -18220,7 +18092,7 @@ var appearance = function() {
       var q = n.type === "font" ? $("#fontChooser > .gallery") : $("#themeChooser > .gallery");
       var o = $(".option-name-" + n.name, q);
       $(".option-thumb .galleryProNotice", q).remove();
-      if (!payments.isPro() && !n.is_free) {
+      if (!true && !n.is_free) {
         $(".galleryProNotice", q).clone().appendTo(o);
         return false;
       }
@@ -18274,7 +18146,7 @@ var friend_recommendation = function() {
     _gaq.push(["_trackPageview", "/virtual/friend_recommendation_prompt/10_days/rating_given/" + j]);
     if (j === "high") {
       j = "<p>We're glad you like WorkFlowy. Please share it with your friends!</p>";
-      if (!payments.isPro()) {
+      if (!true) {
         j += $("#post-rating-dialog-text").html();
       }
       var f = REFERRAL_LINK + "&utm_campaign=friend_recommendation_prompt_10_days&utm_medium=facebook&utm_source=wf";
@@ -18308,7 +18180,6 @@ var friend_recommendation = function() {
           }
         }
       });
-      quota.updateProgressBars(project_tree.getMainProjectTree());
     } else {
       j = '<p style="margin:20px 10px 10px;">Thanks, we hope you enjoy WorkFlowy.</p>';
       h.html(j).dialog("option", {
@@ -18477,7 +18348,6 @@ var settings = function() {
           if (userstorage.isEnabled()) {
             userstorage.updateSettingsFromServer(g);
           }
-          // messages.init();
         }
       }
     });
@@ -18769,7 +18639,7 @@ var settings = function() {
       if (g.dialog("isOpen")) {
         g.dialog("close");
       } else {
-        g.convertVideoPlaceholders().dialog("open");
+        g.dialog("open");
       }
     },
     hideMenu : c,
@@ -19306,305 +19176,7 @@ var react_utils = function() {
     })
   };
 }();
-var payments = function() {
-  function a() {
-    if (l) {
-      $(".freeOnly").remove();
-      $(".proOnly").removeClass("proOnly");
-    } else {
-      $(".proOnly").remove();
-      $(".freeOnly").removeClass("freeOnly");
-    }
-  }
-  function e() {
-    if (typeof Stripe !== "undefined") {
-      Stripe.setPublishableKey(STRIPE_PUBLIC_KEY);
-      jQuery.validator.addMethod("cardNumber", Stripe.validateCardNumber, "Please enter a valid card number");
-      jQuery.validator.addMethod("cardCVC", Stripe.validateCVC, "Please enter a valid security code");
-      jQuery.validator.addMethod("cardExpiry", function() {
-        return Stripe.validateExpiry($(".card-expiry-month").val(), $(".card-expiry-year").val());
-      }, "Please enter a valid expiration");
-      var c = $("#stripe-form");
-      c.show();
-      c.validate({
-        submitHandler : f,
-        rules : {
-          "card-cvc" : {
-            cardCVC : true,
-            required : true
-          },
-          "card-number" : {
-            cardNumber : true,
-            required : true
-          },
-          "card-expiry-year" : "cardExpiry"
-        }
-      });
-      h();
-      q = true;
-    }
-  }
-  function j() {
-    if (q) {
-      $("#plan-upgrade-dialog").dialog("open");
-      if (l) {
-        _gaq.push(["_trackPageview", "/virtual/payments/change_card_dialog/"]);
-      } else {
-        _gaq.push(["_trackPageview", "/virtual/payments/pro_upgrade_dialog/"]);
-      }
-    } else {
-      ui_sugar.showAlertDialog("Sorry, we've encountered an unexpected error. Please email help@workflowy.com if this problem persists after reloading the page.");
-    }
-  }
-  function h() {
-    $(".card-number").attr("name", "card-number");
-    $(".card-cvc").attr("name", "card-cvc");
-    $(".card-expiry-year").attr("name", "card-expiry-year");
-  }
-  function f(c) {
-    $(".card-number").removeAttr("name");
-    $(".card-cvc").removeAttr("name");
-    $(".card-expiry-year").removeAttr("name");
-    $(c["submit-button"]).attr("disabled", "disabled");
-    var g = $(".payment-form");
-    g.addSpinner();
-    var d = function(p) {
-      if ("error" in p) {
-        k(p.error);
-      } else {
-        g.removeSpinner();
-        $("#payment-page").hide();
-        $("#payment-succeeded").show();
-        $("#plan-upgrade-dialog").css("height", "auto");
-        $(c).find(":input").each(function() {
-          $(this).val("");
-        });
-        if (IS_CHROME_APP) {
-          indexeddb_helper.getStores().otherData.write(o, true);
-        }
-        if (l) {
-          _gaq.push(["_trackPageview", "/virtual/payments/change_card_succeeded"]);
-        } else {
-          _gaq.push(["_trackPageview", "/virtual/payments/pro_upgrade_succeeded"]);
-        }
-      }
-    };
-    var k = function(p) {
-      if (typeof p === "string") {
-        $(".payment-errors").html(p);
-      } else {
-        $("#stripe-form > .globalerror").show();
-      }
-      $(".payment-form .submit_button").removeAttr("disabled");
-      g.removeSpinner();
-      if (l) {
-        _gaq.push(["_trackPageview", "/virtual/payments/change_card_failed"]);
-      } else {
-        _gaq.push(["_trackPageview", "/virtual/payments/pro_upgrade_failed"]);
-      }
-    };
-    Stripe.createToken({
-      name : $(".payment-form input[name=name]").val(),
-      number : $(".card-number").val(),
-      cvc : $(".card-cvc").val(),
-      exp_month : $(".card-expiry-month").val(),
-      exp_year : $(".card-expiry-year").val()
-    }, 100, function(p, v) {
-      if (v.error) {
-        g.removeSpinner();
-        $(c["submit-button"]).removeAttr("disabled");
-        $(".payment-errors").html(v.error.message);
-        h();
-        _gaq.push(["_trackPageview", "/virtual/payments/stripe_rejected_credit_card_info"]);
-      } else {
-        var r = $('<input name="stripeToken" value="' + v.id + '" style="display:none;" />');
-        c.appendChild(r[0]);
-        var x = {};
-        c = $(c);
-        c.find(":input").each(function() {
-          if (!$(this).is("[type=radio]") || $(this).attr("checked") === true) {
-            x[$(this).attr("name")] = $(this).val();
-          }
-        });
-        $.ajax({
-          url : l ? c.attr("data-proaction") : c.attr("data-freeaction"),
-          data : x,
-          dataType : "json",
-          type : "POST",
-          success : d,
-          error : k
-        });
-      }
-    });
-    return false;
-  }
-  function n(c, g, d) {
-    $.ajax({
-      url : "https://api.stripe.com/v1/tokens",
-      type : "GET",
-      username : STRIPE_PUBLIC_KEY,
-      data : {
-        card : {
-          name : c.name,
-          number : c.number,
-          exp_month : c.exp_month,
-          exp_year : c.exp_year,
-          cvc : c.cvc
-        },
-        _method : "POST"
-      },
-      success : function(k, p, v) {
-        d(v.status, k);
-      }
-    });
-  }
-  var l = null;
-  var q = false;
-  var o = "showProWelcome";
-  return{
-    init : function() {
-      if (l === null) {
-        l = USER_EMAIL_ADDED;
-      }
-      a($("body"));
-      if (l) {
-        $("body").addClass("pro_member");
-        if (SUBSCRIPTION_CANCELLED) {
-          $(".showIfSubscriptionCancelled").show();
-        } else {
-          if (HAS_ACTIVE_SUBSCRIPTION) {
-            $(".showIfSubscriptionActive").show();
-          }
-        }
-        if (!(typeof HAS_STRIPE_CUSTOMER_ID !== "undefined" ? HAS_STRIPE_CUSTOMER_ID : true)) {
-          $(".showIfDoNotHaveStripeCustomerId").show();
-          $(".hideIfDoNotHaveStripeCustomerId").hide();
-        }
-        $(".subscriptionEndsDateString").text(SUBSCRIPTION_ENDS_DATE_STRING);
-      }
-      var c = $(".card-expiry-month");
-      var g = (new Date).getMonth() + 1;
-      var d = 1;
-      for (;d <= 12;d++) {
-        c.append($('<option value="' + d + '" ' + (g === d ? "selected" : "") + ">" + d + "</option>"));
-      }
-      c = $(".card-expiry-year");
-      g = (new Date).getFullYear();
-      d = 0;
-      for (;d < 12;d++) {
-        c.append($('<option value="' + (d + g) + '" ' + (d === 0 ? "selected" : "") + ">" + (d + g) + "</option>"));
-      }
-      $(".reloadButton").clickOrTapHandler({
-        event : function() {
-          reloadPageFromServer();
-        }
-      });
-      d = $("#plan-upgrade-dialog").dialog({
-        width : l ? 390 : 725,
-        height : l ? 280 : 575,
-        modal : true,
-        title : l ? "Change Payment Details" : "Upgrade to WorkFlowy Pro",
-        autoOpen : false
-      });
-      if (l) {
-        d.dialog("option", {
-          close : function() {
-            $("#payment-page").show();
-            $("#payment-succeeded").hide();
-          }
-        });
-      }
-      $("#proPitchDialog").dialog({
-        width : 430,
-        modal : false,
-        title : "WorkFlowy Pro",
-        position : ["right", "bottom"],
-        autoOpen : false
-      });
-      $("#proPitchDialog > .upgrade-button").live("click", function() {
-        _gaq.push(["_trackPageview", "/virtual/payments/pro_pitch_dialog/learn_more_button_clicked/"]);
-      });
-      $("#tutorialProPitchSlide > .upgrade-button").live("click", function() {
-        _gaq.push(["_trackPageview", "/virtual/payments/new_user_tutorial_pro_pitch/learn_more_button_clicked/"]);
-      });
-      $(".proPitch").live("click", function() {
-        $("#proPitchDialog").convertVideoPlaceholders().dialog("open");
-        _gaq.push(["_trackPageview", "/virtual/payments/bottom_right_go_pro_button_clicked/"]);
-      });
-      $(".upgrade-button, #premium-features-more-button").live("click", function() {
-        j();
-      });
-      $("#premium-cancel-button").live("click", function() {
-        payments.cancelPayment();
-      });
-      if (l) {
-        $("#pro_welcome_dialog").dialog({
-          width : 600,
-          modal : false,
-          autoOpen : false,
-          title : "Welcome to WorkFlowy Pro"
-        });
-        var k = function() {
-          $("#pro_welcome_dialog").convertVideoPlaceholders().dialog("open");
-        };
-        if (IS_CHROME_APP) {
-          indexeddb_helper.getStores().otherData.read(o, function(p) {
-            if (p === true) {
-              k();
-              indexeddb_helper.getStores().otherData.remove(o);
-            }
-          });
-        } else {
-          if (!IS_MOBILE) {
-            if (FIRST_LOAD_FLAGS.showProWelcome) {
-              k();
-            }
-          }
-        }
-      }
-      e();
-      if (IS_PACKAGED_APP && q) {
-        Stripe.createToken = n;
-      }
-      if (FIRST_LOAD_FLAGS.showUpgradeDialog) {
-        d.dialog("open");
-      }
-    },
-    cancelPayment : function() {
-      function c() {
-        var g = $("#proSettingsBox");
-        g.addSpinner();
-        $.ajax({
-          url : "/cancel_pro",
-          type : "POST",
-          dataType : "json",
-          success : function(d) {
-            g.removeSpinner();
-            if (d.cancelled) {
-              $("#premium-cancel-button").replaceWith('<p id="premium-cancelled-message">Your Pro account has been cancelled.</p>');
-              showMessage("Your Pro account has been cancelled.");
-              _gaq.push(["_trackPageview", "/virtual/payments/cancelled_pro_account"]);
-            } else {
-              $("#premium-cancel-button").replaceWith('<p id="premium-cancelled-message">There was an error cancelling your WorkFlowy Pro membership. Please reload the page and try again. If it still doesn\'t work, email help@workflowy.com</p>');
-            }
-          }
-        });
-      }
-      ui_sugar.showAlertDialog("Please confirm that you would like to cancel your WorkFlowy Pro account.", "Cancel Pro Account", true, [{
-        text : "Yes, cancel it",
-        click : function() {
-          c();
-          $(this).dialog("close");
-        }
-      }], "No, keep it");
-    },
-    promptPayment : j,
-    isPro : function() {
-      return l;
-    },
-    removeFreeOrProAsNeededFromDOMSubtree : a
-  };
-}();
+
 var ui_sugar = function() {
   jQuery.fn.addSpinner = function() {
     $(this).each(function(a, e) {
@@ -19695,478 +19267,7 @@ var ui_sugar = function() {
     }
   };
 }();
-var quota = function() {
-  function a(h) {
-    if (!(payments.isPro() || (project_tree.getMainProjectTree().isShared() || IS_MOBILE))) {
-      if (!h.isAuxiliary()) {
-        var f = h.getItemsCreatedInCurrentMonth();
-        h = h.getMonthlyItemQuota();
-        var n = f / h;
-        if (n > 1) {
-          n = 1;
-        }
-        $(".quotaUsedThisMonth").text(f);
-        $(".quotaMonthlyItems").text(h);
-        $(".quotaProgressBar").each(function(l, q) {
-          var o = $(".currentProgress", q);
-          var c = $(q).outerWidth();
-          o.css({
-            width : n * c + "px"
-          });
-        });
-        if (n >= 0.7) {
-          e();
-        } else {
-          j();
-        }
-      }
-    }
-  }
-  function e() {
-  }
-  function j() {
-  }
-  return{
-    init : function() {
-      a(project_tree.getMainProjectTree());
-      var h = 250;
-      if (typeof USER_BASE_QUOTA !== "undefined") {
-        h = USER_BASE_QUOTA;
-      }
-      $(".js-base-quota").text(h);
-      $(".overQuotaDialog").dialog({
-        autoOpen : false,
-        width : 450,
-        modal : true,
-        position : ["center", 180],
-        title : "Usage Quota Reached"
-      });
-    },
-    notifyQuotaStatsChangedForProjectTree : function(h) {
-      a(h);
-    },
-    notifyLocalCreateWhileOverQuotaForProjectTree : function(h) {
-      if (h.isShared()) {
-        $("#sharedOverQuotaDialog").dialog("open");
-        _gaq.push(["_trackPageview", "/virtual/payments/showed_shared_over_quota_notice"]);
-      } else {
-        $("#overQuotaDialog").dialog("open");
-        _gaq.push(["_trackPageview", "/virtual/payments/showed_over_quota_notice"]);
-        metrics.track("Quota Reached");
-      }
-    },
-    updateProgressBars : a
-  };
-}();
-var referral = function() {
-  return{
-    init : function() {
-      function a(e, j, h) {
-        j = j || "fb";
-        h = h || "&utm_campaign=referral_free_space&utm_medium=facebook&utm_source=wf";
-        j = REFERRAL_LINK + "." + j + h;
-        FB.ui({
-          method : "feed",
-          link : j,
-          picture : "https://workflowy.com/media/i/workflowy_icon_rounded_corners_512x512.png",
-          name : "WorkFlowy - Organize Your Brain. For free!",
-          caption : "workflowy.com",
-          description : "Have you tried\u00a0WorkFlowy\u00a0yet? Excellent way to organize your to-dos and other thoughts.",
-          actions : [{
-            name : "Try WorkFlowy",
-            link : j
-          }]
-        }, function(f) {
-          if (f) {
-            if (f.post_id) {
-              if (e !== undefined) {
-                e();
-              }
-            }
-          }
-        });
-      }
-      $("#getMoreSpaceDialog").dialog({
-        title : "Get More Space",
-        autoOpen : false,
-        width : 560,
-        modal : false
-      });
-      $(".getMoreSpaceButton").live("click", function() {
-        $("#getMoreSpaceDialog").dialog("open");
-      });
-      $("#referral_tweet_button").live("click", function() {
-        var e = escape($("#referral_share_message_text").val());
-        window.open("http://twitter.com/share?text=" + e + "&url=%20", "Share this on Twitter", "menubar=no,width=550,height=450,toolbar=no");
-        _gaq.push(["_trackPageview", "/virtual/referral/twitter/share_button_clicked"]);
-      });
-      $("#old_tweet_button").live("click", function() {
-        _gaq.push(["_trackPageview", "/virtual/share_buttons/twitter/share_button_clicked"]);
-      });
-      $("#free_workflowy_items, .free_items, .referralButton").live("click", function() {
-        window.open(URL_PRE_PATH_FOR_PACKAGED_APPS + "/referrals/");
-        metrics.track("referrals:dialog_opened");
-      });
-      $("#facebookReferral").live("click", function() {
-        a(function() {
-          _gaq.push(["_trackPageview", "/virtual/referral/facebook/feed_story_published"]);
-        });
-        _gaq.push(["_trackPageview", "/virtual/referral/facebook/share_button_clicked"]);
-      });
-    }
-  };
-}();
-var library = function() {
-  var a = [{
-    name : "Getting Started",
-    youtubeid : "SOPYrxvojVo",
-    slug : "starting"
-  }, {
-    name : "Basics",
-    youtubeid : "Haqx-rWV_ek",
-    slug : "basics"
-  }, {
-    name : "Zooming",
-    youtubeid : "Hdini-H9faQ",
-    slug : "zoom"
-  }, {
-    name : "Tagging",
-    youtubeid : "1oWUD6y8Wzg",
-    slug : "tag"
-  }, {
-    name : "Starring",
-    youtubeid : "E0ElhjtGoho",
-    slug : "star"
-  }, {
-    name : "Completing",
-    youtubeid : "DZ6E9HTedgM",
-    slug : "complete"
-  }, {
-    name : "Collaboration",
-    youtubeid : "OPcOgM9r_vY",
-    slug : "collaborate"
-  }, {
-    name : "Search",
-    youtubeid : "AWKbj4kVS6s",
-    slug : "search"
-  }, {
-    name : "Move",
-    youtubeid : "imUVGWglArQ",
-    slug : "move"
-  }, {
-    name : "Multi-select",
-    youtubeid : "yCm2rNLhGp4",
-    slug : "multi-select"
-  }, {
-    name : "Delete",
-    youtubeid : "0g5UkwWI2lc",
-    slug : "delete"
-  }, {
-    name : "Duplicate",
-    youtubeid : "OVH5OM4aV5Y",
-    slug : "duplicate"
-  }, {
-    name : "Expand & Collapse",
-    youtubeid : "8Nw0hUP58q0",
-    slug : "expand"
-  }, {
-    name : "Import & Export",
-    youtubeid : "sYW5h7iUp_I",
-    slug : "import"
-  }, {
-    name : "Indent",
-    youtubeid : "45M5xU3J_-0",
-    slug : "indent"
-  }, {
-    name : "Print",
-    youtubeid : "CYDKRLBzESY",
-    slug : "print"
-  }, {
-    name : "Undo",
-    youtubeid : "J4IlOOZmTwg",
-    slug : "undo"
-  }, {
-    name : "Settings",
-    youtubeid : "vvZcGKq0ptQ",
-    slug : "settings"
-  }];
-  var e;
-  var j = {
-    id : "#videoLibraryPlayer",
-    player : null,
-    width : 400,
-    height : 225
-  };
-  var h;
-  var f = true;
-  var n = function() {
-    if (localstorage_helper.localStorageSupported()) {
-      var v = localstorage_helper.read("videoLibraryHistory");
-      if (v !== null) {
-        try {
-          h = JSON.parse(v);
-        } catch (r) {
-          localstorage_helper.remove("videoLibraryHistory");
-          h = [];
-        }
-      }
-    }
-    if (h === undefined) {
-      h = [];
-    }
-  };
-  var l = function() {
-    var v;
-    $.each(a, function(r, x) {
-      if (h.indexOf(x.youtubeid) === -1) {
-        v = x;
-        return false;
-      }
-    });
-    return v;
-  };
-  var q = function() {
-    $("#helpWindow").dialog("open");
-    _gaq.push(["_trackPageview", "/virtual/how_to/opened_in_onboarding_tutorial"]);
-  };
-  var o = function() {
-    $("#libraryContainer").height($("#libraryContainer > .contents").outerHeight() + 15);
-    var v = $("#libraryContainer").closest(".ui-dialog");
-    if (v.is(":visible")) {
-      var r = [v.outerWidth(), v.outerHeight()];
-      var x = [$(window).width(), $(window).height()];
-      var u = {
-        top : x[1] - r[1] - 20,
-        left : x[0] - r[0] - 20
-      };
-      if (r[1] > x[1]) {
-        u.top = 20;
-      }
-      v.css({
-        top : u.top,
-        left : u.left
-      });
-      return v;
-    }
-  };
-  var c = function(v, r) {
-    r = r || false;
-    d.load({
-      book : v,
-      play : r
-    });
-    $("#currentBook .bookName").html(v.name);
-    $(".book").removeClass("active");
-    $("#book" + v.youtubeid).addClass("active");
-    e = v;
-    $("#libraryContainer").scrollTop(0);
-  };
-  var g = function() {
-    var v = $("#libraryContainer");
-    var r = $("#bookList > .content", v);
-    $.each(a, function(x, u) {
-      var b = h.indexOf(u.youtubeid) !== -1 ? "done" : "";
-      r.append('<a id="book' + u.youtubeid + '" class="book fancyButton ' + b + '" href="#' + u.youtubeid + '" data-bookid=' + x + ">" + u.name + "</a> ");
-    });
-  };
-  var d = function() {
-    var v;
-    return{
-      load : function(r) {
-        _.extend({
-          play : false
-        }, r);
-        v.load(r);
-      },
-      pause : function() {
-        v.pause();
-      },
-      setStrategy : function(r) {
-        v = r;
-      }
-    };
-  }();
-  var k = function() {
-    function v(r) {
-      var x = "https://youtube.com/embed/" + r.book.youtubeid;
-      var u = "?rel=0&showinfo=0&wmode=transparent&fs=0&modestbranding=1";
-      if (r.play) {
-        u += "&autoplay=1";
-      }
-      r = $("<webview>");
-      r.attr("src", x + u);
-      r.css({
-        width : j.width + "px",
-        height : j.height + "px"
-      });
-      $(j.id).html(r);
-      f = false;
-    }
-    return{
-      load : v,
-      pause : function() {
-        return v({
-          book : e,
-          play : false
-        });
-      }
-    };
-  }();
-  var p = function() {
-    var v = false;
-    var r = function() {
-      var u = false;
-      return function() {
-        if (!u) {
-          u = true;
-          if (f) {
-            if (FIRST_LOAD_FLAGS.isNewUser || GUIDE_ID) {
-              j.player.playVideo();
-            }
-          }
-          if (!f) {
-            j.player.cueVideoById(e.youtubeid);
-          }
-          f = false;
-        }
-      };
-    }();
-    var x = function(u) {
-      var b = $("#afterLibraryVideoCompleteBox");
-      if (u.data === 0) {
-        b.show();
-      } else {
-        b.hide();
-      }
-      if (u.data === 1) {
-        u = e.youtubeid;
-        if (h.indexOf(u) === -1) {
-          h.push(u);
-          if (localstorage_helper.localStorageSupported()) {
-            b = JSON.stringify(h);
-            localstorage_helper.write("videoLibraryHistory", b);
-          }
-          $("#book" + u).addClass("done");
-        }
-        _gaq.push(["_trackPageview", "/virtual/how_to/video/play/" + e.youtubeid]);
-      }
-    };
-    return{
-      load : function(u) {
-        if (v) {
-          j.player.loadVideoById(u.book.youtubeid);
-        } else {
-          u = document.createElement("script");
-          u.src = "//www.youtube.com/iframe_api";
-          var b = document.getElementsByTagName("script")[0];
-          b.parentNode.insertBefore(u, b);
-        }
-      },
-      pause : function() {
-        j.player.pauseVideo();
-      },
-      youTubeAPIReady : function() {
-        v = true;
-        j.player = new YT.Player($(j.id)[0], {
-          height : j.height,
-          width : j.width,
-          videoId : e.youtubeid,
-          events : {
-            onReady : r,
-            onStateChange : x
-          },
-          playerVars : {
-            autoplay : 0,
-            showinfo : 0,
-            theme : "light",
-            rel : 0,
-            modestbranding : 1,
-            autohide : 1,
-            fs : 0
-          }
-        });
-      }
-    };
-  }();
-  return{
-    displayBooks : g,
-    init : function() {
-      if (!IS_MOBILE) {
-        if (IS_CHROME_APP) {
-          d.setStrategy(k);
-        } else {
-          d.setStrategy(p);
-        }
-        n();
-        g();
-        $(".book").live("click", function() {
-          var v = $(this);
-          v.addClass("done");
-          v = a[v.data("bookid")];
-          c(v, true);
-          return false;
-        }).live("mousedown", function() {
-          return false;
-        });
-        $("#helpWindow").dialog({
-          autoOpen : false,
-          width : j.width + 50,
-          modal : false,
-          title : "Help",
-          open : function() {
-            if (f) {
-              var v = f && (FIRST_LOAD_FLAGS.isNewUser || GUIDE_ID) ? true : false;
-              var r = l() || a[0];
-              if (GUIDE_ID) {
-                r = _.find(a, function(x) {
-                  return GUIDE_ID === x.slug;
-                });
-              }
-              c(r, v);
-            }
-            o();
-          },
-          close : function() {
-            d.pause();
-            $("#helpButton").flashColor("#fff");
-          }
-        }).closest(".ui-dialog").css("position", "fixed");
-        $("#helpRadio span").click(function() {
-          $("#helpWindow .pane").hide();
-          $("#helpWindow .pane." + $(this).data("pane")).show();
-          $("#helpRadio > span").removeClass("current");
-          $(this).addClass("current");
-          o();
-        });
-        $("#helpButton").click(function() {
-          var v = $("#helpWindow");
-          if (v.dialog("isOpen")) {
-            v.dialog("close");
-          } else {
-            v.dialog("open");
-          }
-        }).mousedown(function() {
-          return false;
-        });
-        if (FIRST_LOAD_FLAGS.showNewUserTutorial || GUIDE_ID) {
-          q();
-        }
-        $("#nextVideoButton").live("click", function() {
-          c(l() || a[0], true);
-        });
-      }
-    },
-    videoHistory : h,
-    startOnboardingTutorial : q,
-    reposition : o,
-    youTubeAPIReady : function() {
-      p.youTubeAPIReady();
-    }
-  };
-}();
-function onYouTubeIframeAPIReady() {
-  library.youTubeAPIReady();
-}
+
 var apphooks = function() {
   function a(f, n) {
     if (n === undefined) {
@@ -20967,95 +20068,7 @@ var moving = function() {
     }
   };
 }();
-var messages = function() {
-  function a() {
-    var q = e().filter(".onboarding");
-    if (q.length === 0) {
-      return null;
-    }
-    if (f() === l) {
-      return q.first();
-    }
-    var o;
-    var c;
-    i = 0;
-    for (;i < q.length;i++) {
-      c = q.eq(i);
-      if (c.data("messageid") === f()) {
-        o = i + 1;
-        break;
-      }
-    }
-    q = q.eq(o);
-    if (q.length !== 0) {
-      return q;
-    }
-    return null;
-  }
-  function e() {
-    return $("#site_message > .message").filter("[data-channel=" + n() + "]");
-  }
-  function j(q) {
-    q = $(".message[data-messageid=" + q + "]");
-    if (q.length !== 0) {
-      if (q.hasClass("message--popup")) {
-        q.dialog({
-          title : "Announcement",
-          width : 600
-        });
-      } else {
-        e().removeClass(".current");
-        q.addClass("current");
-        $("#site_message").slideDown();
-      }
-    }
-  }
-  function h() {
-    var q = JSON.parse(SETTINGS.last_seen_message_json_string.value);
-    if (q[n()] === undefined) {
-      q[n()] = {};
-    }
-    return q;
-  }
-  function f() {
-    lastSeenMessageJSON = h();
-    if (lastSeenMessageJSON.do_not_show === true) {
-      return "do_not_show";
-    }
-    return lastSeenMessageJSON[n()].messageid || null;
-  }
-  function n() {
-    return IS_MOBILE ? "mobile" : "desktop";
-  }
-  var l = "first_time_use";
-  return{
-    init : function() {
-      var q;
-      if (FIRST_LOAD_FLAGS.isNewUser) {
-        q = l;
-      } else {
-        q = !FIRST_LOAD_FLAGS.isNewUser && f() === null;
-        var o = a();
-        if (o === null || q) {
-          q = e().not(".onboarding").first();
-          o = q.length > 0 && (f() !== "do_not_show" && q.data("messageid") !== f()) ? q : null;
-        }
-        q = o === null ? null : o.data("messageid");
-      }
-      if (q !== null) {
-        j(q);
-        q = q;
-        o = h();
-        o[n()].messageid = q;
-        q = JSON.stringify(o);
-        settings.changeSettings({
-          last_seen_message_json_string : q
-        });
-      }
-    },
-    displayMessage : j
-  };
-}();
+
 var saved_views = function() {
   function a(I) {
     if (I === undefined) {
@@ -22968,394 +21981,7 @@ var left_bar = function() {
     }
   };
 }();
-var video = function() {
-  jQuery.fn.convertVideoPlaceholders = function() {
-    var a = $(this);
-    a.find(".videoPlaceholder").each(function() {
-      var e = $(this);
-      if (IS_CHROME_APP) {
-        var j = $("<webview />")
-      } else {
-        if (!IS_MOBILE) {
-          j = $('<iframe frameborder="0" allowfullscreen />');
-        }
-      }
-      var h = e.data();
-      var f;
-      for (f in h) {
-        j.attr(f, h[f]);
-      }
-      e.replaceWith(j);
-    });
-    return a;
-  };
-}();
-var experiments = function() {
-  function a(e) {
-    return e in EXPERIMENTS && EXPERIMENTS[e].group === "test";
-  }
-  return{
-    init : function() {
-      if (a("weekly_report")) {
-        weekly_report.init();
-      }
-    },
-    enabled : a,
-    getExperimentsStringForGoogleAnalytics : function() {
-      var e = [];
-      for (experimentName in EXPERIMENTS) {
-        var j = EXPERIMENTS[experimentName];
-        var h = "code" in j ? String(j.code) : experimentName;
-        j = j.group.charAt(0);
-        e.push(h + "=" + j);
-      }
-      return ":" + e.join(":") + ":";
-    }
-  };
-}();
-var upgrade_warning = function() {
-  function a() {
-    ui_sugar.showAlertDialog('<h1>Please upgrade your browser</h1><p>WorkFlowy no longer supports editing in Internet Explorer 8. Please upgrade to one of the following: <a href="http://google.com/chrome">Google Chrome</a>, <a href="http://getfirefox.com">Firefox</a>, <a href="http://windows.microsoft.com/en-us/internet-explorer/ie-11-worldwide-languages">Internet Explorer 11</a>. Sorry for the inconvenience.</p>');
-  }
-  function e() {
-    ui_sugar.showAlertDialog("<h1>Please upgrade iOS</h1><p>WorkFlowy no longer supports editing in iOS versions older than 6.</p>");
-  }
-  return{
-    init : function() {
-      if (IS_IE && IE_VERSION < 9) {
-        a();
-      } else {
-        if (IS_IOS && IOS_VERSION < 6) {
-          e();
-        } else {
-          if (IS_IOS && (!app_detect.isIOSApp() && IOS_VERSION < 8)) {
-            var j = project_tree.getMainProjectTree();
-            if (!(j.isShared() && j.isReadOnly())) {
-              if (!j.isShared()) {
-                $("#ios-browser-editing-notice .install-app-section").css("display", "block");
-              }
-              ui_sugar.showAlertDialog($("#ios-browser-editing-notice").html());
-            }
-          }
-        }
-      }
-    },
-    testWarnings : function() {
-      a();
-      e();
-    }
-  };
-}();
-var metrics = function() {
-  return{
-    track : function(a, e) {
-      if (!IS_PACKAGED_APP) {
-        amplitude.logEvent(a, e);
-      }
-      if (user.isLoggedIn()) {
-        $.post("/metrics/track/", {
-          event_name : a
-        });
-      }
-    },
-    identify : function(a) {
-      if (!IS_PACKAGED_APP) {
-        amplitude.setUserId(a);
-      }
-    },
-    setUserProperties : function(a) {
-      if (!IS_PACKAGED_APP) {
-        amplitude.setUserProperties(a);
-      }
-    },
-    setupGoogleAnalyticsForChromeApp : function() {
-      window.gaService = analytics.getService("workflowy_chrome_app");
-      window.gaTracker = gaService.getTracker("UA-11472180-1");
-      gaTracker.sendAppView("WorkFlowy Chrome App");
-    },
-    usagePing : function() {
-      var a = $("body").hasClass("shared");
-      var e = project_tree.getMainProjectTree().getStats();
-      e.items = utils.convertToOrderOfMagnitudeNumber(e.items);
-      e.completed = utils.convertToOrderOfMagnitudeNumber(e.completed);
-      var j = user.timeSinceJoin();
-      _.each(j, function(h, f, n) {
-        n[f] = utils.convertToOrderOfMagnitudeNumber(h);
-      });
-      a = {
-        isShared : a,
-        isLoggedIn : user.isLoggedIn()
-      };
-      a = _.extend(a, e, j);
-      userProperties = _.extend(j, {
-        joinDate : user.joinDateAsInteger()
-      }, e);
-      metrics.setUserProperties(userProperties);
-      metrics.track("Usage Ping", a);
-    }
-  };
-}();
-var weekly_report = function() {
-  var a = {
-    init : function() {
-      if (this.shouldShowReport()) {
-        this.setupAndShow();
-      }
-    },
-    setupAndShow : function() {
-      this.setupEvents();
-      this.setWeeksActive();
-      this.fetchAndPopulate();
-      this.show();
-    },
-    shouldShowReport : function() {
-      var e = new Date - new Date("2014-10-27") > 0;
-      var j = project_tree.getMainProjectTree().isShared();
-      var h = this.getWeeksActive() > 0;
-      if (!e || (j || !h)) {
-        return false;
-      }
-      e = this.daysBeforeNow(this.getLastSeen());
-      if ((new Date).getDay() === 1) {
-        return e > 2;
-      }
-      if (e > 6) {
-        return true;
-      }
-      return false;
-    },
-    setupEvents : function() {
-      if (IS_CHROME_APP) {
-        this.listenForFilterEvent();
-      }
-    },
-    listenForFilterEvent : function() {
-      $(".weekly-report__filter-link").live("click", function(e) {
-        e = $(e.target);
-        if (e.data("query")) {
-          search.setSearchBoxAndSearch(e.data("query"));
-        }
-      });
-    },
-    setWeeksActive : function() {
-      var e = this.getWeeksActive();
-      var j = " weeks";
-      if (e === 1) {
-        j = " week";
-      }
-      $(".js-weekly-report__weeks-active").text(e + j);
-    },
-    fetchAndPopulate : function() {
-      var e = this;
-      $.get("/user_stats/week/", function(j) {
-        e.populate(j);
-      });
-    },
-    show : function() {
-      $(".weekly-report").dialog({
-        width : 500
-      });
-      localstorage_helper.write("last-weekly-report", (new Date).getTime());
-    },
-    getLastSeen : function() {
-      var e = new Date(LAST_WEEKLY_REPORT);
-      var j = localstorage_helper.read("last-weekly-report");
-      var h = new Date(j);
-      return j === null || h < e ? e : h;
-    },
-    daysBeforeNow : function(e) {
-      e = (new Date).getTime() - e.getTime();
-      return Math.round(e / this.dayInMilliseconds);
-    },
-    dayInMilliseconds : 864E5,
-    weekInMilliseconds : 6048E5,
-    getWeeksActive : function() {
-      var e = this.daysBeforeNow(new Date(COHORT));
-      return Math.round(e / 7);
-    },
-    populate : function(e) {
-      var j = this;
-      $.each(e, function(h, f) {
-        j.addStat(h, f);
-      });
-    },
-    addStat : function(e, j) {
-      $(".js-weekly-report__" + e).text(j);
-    }
-  };
-  return{
-    init : function() {
-      if (!IS_MOBILE) {
-        a.init();
-      }
-    },
-    show : function() {
-      a.setupAndShow();
-    }
-  };
-}();
-var images = function() {
-  var a = function() {
-    return{
-      urlIsImage : function(h) {
-        return h.match(/\.(jpeg|jpg|gif|png)$/i) != null;
-      },
-      addThumbToLink : function(h) {
-        h = $(h);
-        var f = h.attr("href");
-        f = j.getImageUrl(f, {
-          width : 30,
-          height : 30,
-          crop : "fill",
-          gravity : "faces"
-        });
-        var n;
-        n = 0;
-        var l;
-        var q;
-        var o;
-        if (f.length != 0) {
-          l = 0;
-          o = f.length;
-          for (;l < o;l++) {
-            q = f.charCodeAt(l);
-            n = (n << 5) - n + q;
-            n |= 0;
-          }
-        }
-        n = n;
-        n = "imgClass" + n;
-        h.append("<style> ." + n + "::after{ background-image: url(" + f + "); }</style>").addClass("contentLink--image").addClass(n);
-        return h[0].outerHTML;
-      }
-    };
-  }();
-  var e = function() {
-    function h(f) {
-      function n(o) {
-        return _.map(o, function(c) {
-          return'<div class="contentPreviewImageContainer"><img class="contentPreview" src="' + c.cdn + '" /><br /><a class="contentPreviewSourceLink" href="' + c.original + '" target="_blank">' + c.original + "</a></div>";
-        }).join(" ");
-      }
-      function l(o) {
-        o = f.urls.slice(0, o.length);
-        var c = n(o);
-        o = $("<div>").css("opacity", 0);
-        o.append(c);
-        $(".contentPreviewPane").append(o);
-        c = o[0].scrollHeight;
-        o.remove();
-        o = n(f.urls);
-        $(".contentPreviewContainer").html(o);
-        $(".contentPreviewScroller").scrollTop(c);
-      }
-      function q(o) {
-        var c = [];
-        var g = 0;
-        var d = function() {
-        };
-        if (o.length === 0) {
-          setTimeout(function() {
-            d([]);
-          }, 0);
-        }
-        o = typeof o != "object" ? [o] : o;
-        var k = 0;
-        for (;k < o.length;k++) {
-          c[k] = new Image;
-          c[k].src = o[k];
-          c[k].onload = function() {
-            g++;
-            if (g == o.length) {
-              d(c);
-            }
-          };
-          c[k].onerror = function() {
-            g++;
-            if (g == o.length) {
-              d(c);
-            }
-          };
-        }
-        return{
-          done : function(p) {
-            d = p || d;
-          }
-        };
-      }
-      (function() {
-        q([f.urls[f.startIndex].cdn]).done(function() {
-          var o = '<div class="contentPreviewPane"><div class="contentPreviewPane__bg"></div><div class="contentPreviewScroller"><div class="contentPreviewContainer">' + n([f.urls[f.startIndex]]) + "</div></div></div>";
-          $("body").append(o);
-          o = _.map(f.urls.slice(0, f.startIndex), function(c) {
-            return c.cdn;
-          });
-          q(o).done(l);
-        });
-      })();
-    }
-    (function() {
-      $(".contentPreviewImageContainer").clickOrTapHandler({
-        event : function(f) {
-          if ($(f.target).is(".contentPreviewImageContainer")) {
-            f.preventDefault();
-            $(".contentPreviewPane").remove();
-          }
-        },
-        neverPreventScrolling : true,
-        cancelTapOnMove : true
-      });
-    })();
-    return{
-      handleImageLinkClick : function(f) {
-        var n = {};
-        var l = f[0];
-        f = $(".contentLink--image");
-        _.each(f, function(q, o) {
-          if (q === l) {
-            n.startIndex = o;
-            return false;
-          }
-        });
-        n.urls = f.map(function(q, o) {
-          var c = $(o).attr("href");
-          return{
-            original : c,
-            cdn : j.getImageUrl(c, {
-              crop : "limit",
-              width : window.innerWidth * 0.9
-            })
-          };
-        });
-        h(n);
-      }
-    };
-  }();
-  var j = function() {
-    return{
-      getImageUrl : function(h, f) {
-        if (!f) {
-          return "https://res.cloudinary.com/demo/image/fetch/" + h;
-        }
-        var n = "https://res.cloudinary.com/demo/image/fetch/";
-        var l = _.map(f, function(q, o) {
-          return{
-            height : "h",
-            width : "w",
-            crop : "c",
-            gravity : "g"
-          }[o] + "_" + q;
-        }).join(",");
-        n += l + "/" + h;
-        return n;
-      }
-    };
-  }();
-  return{
-    thumbs : a,
-    preview : e
-  };
-}();
+
 user = function() {
   return{
     isLoggedIn : function() {
@@ -23414,9 +22040,8 @@ var interface_action_handler = function() {
 */
 
 var PGP = function() {
-  var KEY_PASS = 'pass'
-  var PGP_KEY = {"name":"tomdev@protonmail.com","privkey":"-----BEGIN PGP PRIVATE KEY BLOCK-----\r\nVersion: OpenPGP.js v2.3.3\r\nComment: http://openpgpjs.org\r\n\r\n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\nugHZ3Q==\r\n=7gBY\r\n-----END PGP PRIVATE KEY BLOCK-----\r\n","pubkey":"-----BEGIN PGP PUBLIC KEY BLOCK-----\r\nVersion: OpenPGP.js v2.3.3\r\nComment: http://openpgpjs.org\r\n\r\nxsBNBFfGAi8BCADOTyIVjef45spJ+41RL0E60sdTpQIOpMtobOPNsEuZ2mR3\nFaL/gmibAOht/y7uT3JxM+JHlBctEgkbEGuPUkqDixIkiOWONsnGCV1wN/d9\nJAVi6HGKnprbwk0xiHt9yaDekvhEXdH99eeUkMjHFpTOlUJQStuHDq0onefV\ni7CJ78UYKKu4RBZgYTB/NqL+Sj0+vV1GTlKglsu6HBMDTMvSj1LgWM6uwbZ9\nloF5zOYfbJXE4yyAc68d+5YSb4+qs4E1W6Wq3W7yoLLt0YKXM6wbDgI12ybW\n4SxY0gx641K4GLm7NXFR/68O+thM1lNozEgt/6hPu9LQkRFQTodKt/2xABEB\nAAHNG1RvbSA8dG9tZGV2QHByb3Rvbm1haWwuY29tPsLAdQQQAQgAKQUCV8YC\nMAYLCQcIAwIJEEKi8wZq9Gw7BBUIAgoDFgIBAhkBAhsDAh4BAAC19ggAikKo\n8xPBe2U9Taj0+qHU+xdFpKIj83aQgdIScluaNp3/dhxsqXsXuq8ikYjdfIJb\nTN+TkzwALagBIoRZEPvstTEAmTjD63l6Hb/8E6yV9SyMG49cP6KVPmU8gg8G\n8nph52AK7iFnk3V5DuCXPJLSHnF7mrECEQE6XYENhV8BVwl+Bz5Y6otP81p0\ngZEro/gL98mDrPLUePl0lFWTjI4EshVpypjoUe6Ft14oVpiQnxXsQZAvyrMI\nJdDaNwfu3n28LwvP0omzWa15SoDb57EV09qHirui7yXPCvydIwUOGFAHsfow\nUKFShQxjnOc+LpB/BXy+lbdwKGOPdUbMaFABbM7ATQRXxgIvAQgA7AZ03Je2\nQZhu3xvRKeZnduil075D5mMqEp3lZoGeXKWLs4BIIXb37dty6Tul++fXEZGZ\n3ZJnNdYAl4ltCVGPTcB4+0tWmy0Bufr2GvHLHZh/9qFpynRQZp+s9V7z2JKz\nL+n+NAH7xb+jSuRM38AQ8K4Xg9FBTaInlRmROWt3iacaasCCA9/Csnk3thP8\n6OrtH4JyVeAgi+SFtpqSfpUkMZY+ni7N9uY+HdTlYTTSXNCOkS8J5Ziff91R\nm0U3zTnfc8qwNOKEAvuO5hfG/uypjovxN/tOqbXFkTSdyIrFsPHlZwGdSlUP\nBr+yDymRjcxDcYbxAj2Jn3XMs+R8LWBRkQARAQABwsBfBBgBCAATBQJXxgIw\nCRBCovMGavRsOwIbDAAAYJMH/iE59pwUpFmiqiUgjRvRIzrjhbeBm3e1i/bC\npGrNe1+cTbQR7sdVRMTMFAUY9g0Kkkx0hHpnQhifFZAyPxRV9T1eiCk7Nu8C\nStNl62YyiomSp3f6TDc/hZojwjnceg7F/O429tDNwAXuXJbX2rPeRI3P5EMJ\nE29N4AqNutKOIjpHRiqvMaVtbJKyUTudNvZ5gkArJ5lYuu/wj5WI5MFl83t8\nkgWX5XaRP5jbB8DJIcRYJjoD99Q8yaTQQU56o7NPzuyQyMRGlbQV1a5Yl370\n0V/eHnoD9ZlBXed+f8L/82wSGjMdihJIYumphyF9jZW8UvIDQ26buxBGFMXa\nVboB2d0=\r\n=c44I\r\n-----END PGP PUBLIC KEY BLOCK-----\r\n\r\n"};
-
+  var KEY_PASS = ''
+  var PGP_KEY = {}
   if (jQuery.when.all===undefined) {
       jQuery.when.all = function(deferreds) {
           var deferred = new jQuery.Deferred()
@@ -23453,12 +22078,14 @@ var PGP = function() {
           message: openpgp.message.readArmored(data),
           privateKey: selectedKey
       }
-    } else console.log('failed to decrypt private key')
-    return openpgp.decrypt(options)
+      return openpgp.decrypt(options)
+    } else {
+      throw Error('Failed to decrypt private key.')
+    }
   }
 
   function encryptOperations (operations) {
-      var deferreds = _DEFERREDS
+      var deferreds = []
       operations.forEach(function(op){
             var deferred = $.Deferred();
             switch (op.type) {
@@ -23540,11 +22167,9 @@ var PGP = function() {
       var deferred = $.Deferred()
       deferreds.push(deferred)
       if (typeof project.ch === 'object') {
-        (function(){
-          for (var i = 0; i < project.ch.length; i++) {
-            decryptChild(project.ch[i])
-          }
-        })()
+        project.ch.forEach(function(child){
+          decryptChild(child)
+        })
       }
       if (project.nm !== null && project.nm.length > 0) {
         decryptData(project.nm).then(function(cipher){
@@ -23563,8 +22188,11 @@ var PGP = function() {
     return $.when.all( deferreds )
   }
   return {
-    init : function () {
+    init : function (key, pass) {
       // openpgp.initWorker("/static/js/openpgp.worker.min.js")
+      console.log('init PGP', key, pass)
+      PGP_KEY = key
+      KEY_PASS = pass
       openpgp.config.versionstring = '0'
       openpgp.config.commentstring = '0'
     },
@@ -23572,11 +22200,7 @@ var PGP = function() {
     encryptData: encryptData,
     decryptData: decryptData,
     decryptTree: decryptTree,
-    key: PGP_KEY,
   }
 }()
-PGP.init()
 
 allJSFinishedLoadingCallback();
-
-var _DEFERREDS = [];
