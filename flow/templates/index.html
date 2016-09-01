@@ -184,16 +184,13 @@
 
   <script src="{% static 'js/react-and-react-dom-15.0.0.min.js' %}" type="text/javascript" ></script>
 
-  <script src="{% static 'js/openpgp.min.js' %}" type="text/javascript" ></script>
+  <script src="{% static 'js/openpgp.js' %}" type="text/javascript" ></script>
 
   <script src="{% static 'js/document_view.js' %}" type="text/javascript" ></script>
 
   <style>
-    #loginRegisterScreen {
+    #loginScreen {
       z-index: 1000;
-      position: absolute;
-      top: 0;
-      left: 0;
       background: #f6f6f6;
       width: 100%;
       height: 100%;
@@ -202,23 +199,20 @@
       border-top:1px solid #eee;
     }
 
-    .loginScreen, .registerScreen{
-      display:none;
-    }
 
-    #loginRegisterScreen .logo{
+    #loginScreen .logo{
       width:250px;
       display: block;
       margin:0 auto;
     }
 
-    #loginRegisterScreen .centerBox {
+    #loginScreen .centerBox {
       position: relative;
     }
-    body.chrome_app #loginRegisterScreen .centerBox {
+    body.chrome_app #loginScreen .centerBox {
       top: 200px;
     }
-    body.android_app #loginRegisterScreen .centerBox {
+    body.android_app #loginScreen .centerBox {
       top: 60px;
     }
 
@@ -236,7 +230,7 @@
       margin-top:8px;
     }
 
-    #loginRegisterScreen .form .submit{
+    #loginScreen .form .submit{
       background: #26a;
       color: #fff;
       border-radius: 4px;
@@ -246,11 +240,11 @@
       margin-top:10px;
     }
 
-    #loginRegisterScreen .form .submit:active, #loginRegisterScreen .form .submit.tapped {
+    #loginScreen .form .submit:active, #loginScreen .form .submit.tapped {
       background:#159;
     }
 
-    #loginRegisterScreen .errors {
+    #loginScreen .errors {
       padding: 4px 0px;
       text-align: left;
       color:#a00;
@@ -267,7 +261,7 @@
     margin-top: 5px;
     }
 
-    #loginRegisterScreen .link{
+    #loginScreen .link{
       font-size:12px;
       color:#26a;
 
@@ -279,7 +273,7 @@
     /* Don't want hover states in Android app. Would be cleaner/less-hacky
        to have separate sub-CSS files for desktop and mobile instead of doing
        this here. */
-     body.chrome_app #loginRegisterScreen .link:hover{
+     body.chrome_app #loginScreen .link:hover{
       text-decoration:underline;
       cursor:pointer;
     }
@@ -309,7 +303,18 @@
 
   <body class="">
 
-    <div id="loadingScreen" style="z-index: 1000; position: absolute; top: 0; left: 0; background: white; width: 100%; height: 100%;">
+    <div id="loginScreen" style="display: block;">
+      <div class="centerBox">
+        <div class="form loginScreen">
+          <form id="loginForm" class="loginForm" name="loginForm" method="post">
+            <input id="id_password" type="password" placeholder="Password" name="password" required>
+            <input type="submit" class="submit" value="Login">
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="loadingScreen" style="z-index: 1000; position: absolute; top: 0; left: 0; background: white; width: 100%; height: 100%; display: none;">
       <div id="loadingScreenDisplayBox" style="position: fixed; top: 40%; left: 50%; width: 200px; margin-top: -30px; margin-left: -100px; text-align: center;">
         <div id="loadingScreenSpinner" style="display: inline-block; background: url({% static 'i/ajax-loader.gif); width: 32px; height: 32px;"></div>
         <div style="margin-top: 10px;">
@@ -320,16 +325,9 @@
       </div>
     </div>
 
-
-
-
     <div id="documentView" style="display: none">
-
-
       <div id="header" class="notSelectable">
-
         <form id="searchForm">
-
           <input id="searchBox" name="searchBox" type="text" class="selectable" autocomplete="off" placeholder="Search">
           <div id="searchCancel" title="Clear search">
             <svg viewBox="0 0 9 9" version="1.1" xmlns="http://www.w3.org/2000/svg">

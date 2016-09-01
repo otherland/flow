@@ -1023,7 +1023,6 @@ var WINDOW_ID = null;
 var MOST_RECENTLY_OPENED_WINDOW_ID_KEY = "mostRecentlyOpenedWindowId";
 var TIMEZONE_INFO = null;
 var SHOW_COMPLETED = true;
-var EVENTS = {};
 var TIMEOUTS = {};
 var CURRENTLY_ACTIVE_PAGE = null;
 var DRAG_MODE = false;
@@ -1038,15 +1037,12 @@ var GLOBAL_NAVIGABLE_PROJECTS_PATTERN = ".page.active " + NAVIGABLE_PROJECTS_PAT
 var DO_NOT_INITIALIZE = false;
 var READY_FOR_DOCUMENT_READY = false;
 var DOCUMENT_READY_TRIGGERED = false;
-var UPDATE_INITIALIZATION_DATA_EVERY_N_DAYS = 3;
-var PACKAGED_APP_LOGGED_IN_KEY = "logged_in";
 var CONTENT_HTML_CONTAINER = null;
 var SHORTCUT_KEYS = null;
 var SHORTCUT_KEYS_WITH_META = null;
 var SHORTCUT_KEYS_FOR_MOVING = null;
 var SHORTCUT_KEYS_FOR_MOVING_WITH_META = null;
 var FORMAT_FLAGS = null;
-var FORMAT_FLAGS_SET_LOCATION = null;
 var LAST_CONTENT_FOCUS_TIMESTAMP = null;
 var NUM_DELETED_ITEMS_NEEDED_FOR_DROPDOWN_MESSAGE = 10;
 var LAST_UP_OR_DOWN_ARROW_IN_NAME_USED_DEFAULT_BEHAVIOR = false;
@@ -1116,25 +1112,29 @@ function allJSFinishedLoadingCallback() {
     initializeLocalStorageAndGetInitializationData();
   }
 }
-function initializationDataFetchFinishedCallback(data, e) {
-  var key = data.settings.pgp_key
-  var pass = 'pass'
-  PGP.init(key, pass)
-  PGP.decryptTree(data).then(function(){
-    setupGlobalVariables(data, e)
+function initializationDataFetchFinishedCallback(data, bool) {
+  $('#loginScreen').show()
+  $('#loginForm').submit(function(e){
+    e.preventDefault()
+    var key = data.settings.pgp_key
+    var password = $('#id_password').val()
+
+    PGP.init(key, password)
+    $('#loginScreen').hide()
+    PGP.decryptTree(data).then(function(){
+      setupGlobalVariables(data)
+    })
+
   })
 }
-function setupGlobalVariables(a, e) {
-  if (e === undefined) {
-    e = null;
-  }
+function setupGlobalVariables(data) {
   try {
-    if (a === null) {
+    if (data === null) {
       throw Error("Initialization data load failed.");
     }
-    var j = a.globals;
-    var h = a.projectTreeData;
-    var f = a.settings;
+    var j = data.globals;
+    var h = data.projectTreeData;
+    var f = data.settings;
     var n = 0;
     for (;n < j.length;n++) {
       var l = j[n];
@@ -1151,34 +1151,14 @@ function setupGlobalVariables(a, e) {
         SETTINGS[q].value = f[q];
       }
     }
-    var o = SETTINGS.theme.value;
-    var c = SETTINGS.font.value;
     userstorage.init();
-    var g = o;
-    var d = c;
-    j = function(p, v) {
-      var r = 0;
-      for (;r < p.length;r++) {
-        if (p[r].name === v) {
-          return true;
-        }
-      }
-      return false;
-    };
-    g = j(THEME_OPTIONS, g) ? g : "default";
-    d = j(FONT_OPTIONS, d) ? d : "default";
-    if (EMBED) {
-      g = "embed";
+
+    READY_FOR_DOCUMENT_READY = true;
+    if (DOCUMENT_READY_TRIGGERED) {
+      documentReadyFunc();
     }
-    loadFontAndThemeCSS(g, d);
   } catch (k) {
     handleExceptionDuringInitialization(k);
-  }
-}
-function loadFontAndThemeCSS(a, e) {
-  READY_FOR_DOCUMENT_READY = true;
-  if (DOCUMENT_READY_TRIGGERED) {
-    documentReadyFunc();
   }
 }
 function documentReadyFunc() {
@@ -1313,9 +1293,6 @@ function selectOnActivePage(a) {
 }
 function getActivePage() {
   return CURRENTLY_ACTIVE_PAGE;
-}
-function getProjectOnActivePageUsingProjectid(a) {
-  return selectOnActivePage("[projectid=" + a + "]").getProject();
 }
 function createPage() {
   var a = $('<div class="page" style="transition: none;"><div class="pageStar"></div><div class="mainTreeRoot project open" projectid="None"><div class="name"><div class="content"></div><span class="parentArrow"></span></div><div class="notes"><div class="content"></div></div><div class="children"></div><div class="addButton" title="Add new item">+</div></div><div class="footer"><h3 class="siteSlogan"></h3></div><div class="bottomPadding"></div><div class="widgetContainer"></div></div>');
@@ -2079,9 +2056,6 @@ function addEvents() {
       push_poll.scheduleNextPushAndPoll(true);
       return "You have unsaved changes. Do you want to leave this page and discard your changes?";
     }
-  };
-  window.onerror = function(h, f, n) {
-
   };
   $(window).bind("resize", function() {
     getActivePage().setPositionAndDimensionsForPage();
@@ -5179,9 +5153,6 @@ jQuery.fn.duplicateIt = function(a, e) {
     return this;
   }
 };
-function closeAllDialogs() {
-  $(".ui-dialog:visible > .ui-dialog-content").dialog("close");
-}
 jQuery.fn.moveProjects = function(a) {
   var e = $(this);
   e = project_tree.getProjectReferencesFromDomProjects(e);
@@ -20369,10 +20340,17 @@ var PGP = function() {
   return {
     init : function (key, pass) {
       // openpgp.initWorker("/static/js/openpgp.worker.min.js")
-      PGP_KEY = key
-      KEY_PASS = pass
-      openpgp.config.versionstring = '0'
-      openpgp.config.commentstring = '0'
+      var selectedKey = openpgp.key.readArmored(key.privkey).keys[0]
+      var decryptedPrivate = selectedKey.decrypt(pass)
+      if (decryptedPrivate) {
+        PGP_KEY = key
+        KEY_PASS = pass
+        openpgp.config.versionstring = '0'
+        openpgp.config.commentstring = '0'
+      } else {
+        throw Error('Failed to decrypt private key.')
+      }
+
     },
     encryptOperations : encryptOperations,
     encryptData: encryptData,
