@@ -19609,15 +19609,15 @@ var left_bar = function() {
       autoHideEnabled : React.PropTypes.bool.isRequired
     },
     render : function() {
-      var H = this.props.allSectionsExceptRecent.map(function(da) {
+      var siblings = this.props.allSectionsExceptRecent.map(function(da) {
         return utils.copyObject(da);
       });
-      var K = utils.copyObject(this.props.recentSection);
-      var P = this.props.availableHeight;
-      var Q = Math.floor(P * K.heightFraction);
-      K.height = Q;
-      P -= Q;
-      H.forEach(function(da) {
+      var section = utils.copyObject(this.props.recentSection);
+      var availableHeight = this.props.availableHeight;
+      var height = Math.floor(availableHeight * section.heightFraction);
+      section.height = height;
+      availableHeight -= height;
+      siblings.forEach(function(da) {
         var ia = L.sectionNotIncludingContents;
         if (da.locations.length === 0) {
           ia += L.emptySectionNotice;
@@ -19632,10 +19632,10 @@ var left_bar = function() {
         da.maxHeight = ia;
       });
       for (;;) {
-        var Y = P;
+        var Y = availableHeight;
         var aa = 0;
         var fa = [];
-        H.forEach(function(da) {
+        siblings.forEach(function(da) {
           if ("height" in da && da.height === -1) {
             Y -= da.maxHeight;
           } else {
@@ -19660,14 +19660,14 @@ var left_bar = function() {
           break;
         }
       }
-      K.isRecentSection = true;
-      H = H.concat([K]);
-      H = q(H);
+      section.isRecentSection = true;
+      siblings = siblings.concat([section]);
+      siblings = q(siblings);
       return React.DOM.div({
         className : "leftBarContents"
       }, React.DOM.div({
         className : "leftBarSections"
-      }, H), React.createElement(O, {
+      }, siblings), React.createElement(O, {
         autoHideEnabled : this.props.autoHideEnabled
       }));
     }

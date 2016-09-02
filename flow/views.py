@@ -155,8 +155,9 @@ def push_and_poll(request):
 
 @login_required
 def get_settings(request):
+	print 'getting settings'
 	user = request.user
-	return JsonResponse({
+	response = JsonResponse({
 		"username": user.username,
 		"theme": user.profile.theme,
 		"last_seen_message_json_string": "{}",
@@ -168,6 +169,8 @@ def get_settings(request):
 		"email": user.email,
 		"show_keyboard_shortcuts": user.profile.show_keyboard_shortcuts
 	})
+	print 'returning response'
+	return response
 
 
 def create_children(project, parent, priority, user_id):

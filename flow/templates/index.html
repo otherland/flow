@@ -117,6 +117,7 @@
 
     var LOG_DEBUG_MESSAGES = false;
 
+    var USER_IS_LEFT = true;
     var DEMO_MODE = false;
     var EMBED = false;
 
@@ -183,8 +184,6 @@
   <script src="{% static 'js/underscore-min.js' %}" type="text/javascript" ></script>
 
   <script src="{% static 'js/react-and-react-dom-15.0.0.min.js' %}" type="text/javascript" ></script>
-
-  <script src="{% static 'js/openpgp.js' %}" type="text/javascript" ></script>
 
   <script src="{% static 'js/document_view.js' %}" type="text/javascript" ></script>
 
@@ -303,7 +302,7 @@
 
   <body class="">
 
-    <div id="loginScreen" style="display: block;">
+    <div id="loginScreen" style="display: none;">
       <div class="centerBox">
         <div class="form loginScreen">
           <form id="loginForm" class="loginForm" name="loginForm" method="post">
@@ -373,10 +372,10 @@
 
       </div>
 
-      <div id="leftBarContainer" class="notSelectable">
+      <div id="leftBarContainer">
         <div id="leftBarHoverZone"></div>
         <div id="leftBar">
-          <div class="leftBarInnerContainer"></div>
+          <div class="leftBarInnerContainer" style="height:100%"></div>
         </div>
       </div>
 
