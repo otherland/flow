@@ -142,8 +142,25 @@ def get_transaction_timestamp(date_joined=1414319969):
 	current_milli_time = lambda: int(round(time.time() * 1000))
 	return (current_milli_time() / 1000 - date_joined)
 
+
+from functools import wraps
+def disable_for_loaddata(signal_handler):
+    """
+    Decorator that turns off signal handlers when loading fixture data.
+    """
+
+    @wraps(signal_handler)
+    def wrapper(*args, **kwargs):
+        if kwargs.get('raw'):
+            return
+        signal_handler(*args, **kwargs)
+    return wrapper
+
+
+@disable_for_loaddata
 @receiver(pre_save, sender='data.Project')
 def update_sibling_priority(sender, instance, **kwargs):
+
 	siblings = instance.siblings
 	try:
 		# updating
@@ -197,6 +214,7 @@ def update_sibling_priority(sender, instance, **kwargs):
 		siblings = siblings.filter(priority__gte=instance.priority)
 		siblings.update(priority=models.F('priority')+1)
 
+@disable_for_loaddata
 @receiver(post_save, sender='auth.User')
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
