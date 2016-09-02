@@ -1112,20 +1112,8 @@ function allJSFinishedLoadingCallback() {
     initializeLocalStorageAndGetInitializationData();
   }
 }
-function initializationDataFetchFinishedCallback(data, bool) {
-  $('#loginScreen').show()
-  $('#loginForm').submit(function(e){
-    e.preventDefault()
-    var key = data.settings.pgp_key
-    var password = $('#id_password').val()
-
-    PGP.init(key, password)
-    $('#loginScreen').hide()
-    PGP.decryptTree(data).then(function(){
-      setupGlobalVariables(data)
-    })
-
-  })
+function initializationDataFetchFinishedCallback(data) {
+    setupGlobalVariables(data)
 }
 function setupGlobalVariables(data) {
   try {
@@ -11688,28 +11676,9 @@ var push_poll = function() {
         ajaxData.timeout = 3E4;
       }
 
-      /*
-        Encrypt the push_poll_data operations.
-        When complete, do ajax.
-      */
-      var operations = push_poll_data[0].operations;
-      if (typeof operations !== "undefined") {
-        (function(){
-          PGP.encryptOperations(operations).then(function(updated_operations) {
-            push_poll_data[0].operations = updated_operations
-            payload.push_poll_data = JSON.stringify(push_poll_data);
-            ajaxData.data = payload;
-            console.log('calling ajax')
-            $.ajax(ajaxData);
-          });
-        })();
-      } else {
-        payload.push_poll_data = JSON.stringify(push_poll_data);
-        ajaxData.data = payload;
-        console.log('calling ajax')
-        $.ajax(ajaxData);
-      }
-
+      payload.push_poll_data = JSON.stringify(push_poll_data);
+      ajaxData.data = payload;
+      $.ajax(ajaxData);
     }
   }
   function n() {
@@ -20195,168 +20164,5 @@ var left_bar = function() {
 /*
   Added functionality below:
 */
-
-var PGP = function() {
-  var KEY_PASS = ''
-  var PGP_KEY = {}
-  if (jQuery.when.all===undefined) {
-      jQuery.when.all = function(deferreds) {
-          var deferred = new jQuery.Deferred()
-          function toArray(args) {
-              return $.makeArray(args)
-          }
-          $.when.apply(jQuery, deferreds).then(
-              function() {
-                  deferred.resolve(toArray(arguments))
-              },
-              function() {
-                  deferred.reject(toArray(arguments))
-              })
-          return deferred
-      }
-  }
-
-  function encryptData(data) {
-    var key = PGP_KEY
-    var options = {
-        data: data,
-        publicKeys: openpgp.key.readArmored(key.pubkey).keys
-    }
-    return openpgp.encrypt(options)
-  }
-
-  function decryptData(data) {
-    var key = PGP_KEY
-    var selectedKey = openpgp.key.readArmored(key.privkey).keys[0]
-    var decryptedPrivate = selectedKey.decrypt(KEY_PASS)
-    if (decryptedPrivate) {
-      var options = {
-          message: openpgp.message.readArmored(data),
-          privateKey: selectedKey
-      }
-      return openpgp.decrypt(options)
-    } else {
-      throw Error('Failed to decrypt private key.')
-    }
-  }
-
-  function encryptOperations (operations) {
-      var deferreds = []
-      operations.forEach(function(op){
-            var deferred = $.Deferred();
-            switch (op.type) {
-              case "edit" :
-                encryptOp(op).done(function ( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc ) {
-                    // all encryption statements have resolved
-                    // update operation with encrypted data
-                    if (encryptName !== null) {
-                        op.data.name = encryptName
-                    }
-                    if (encryptDesc !== null) {
-                        op.data.description = encryptDesc
-                    }
-                    if (encryptPrevName !== null) {
-                        op.undo_data.previous_name = encryptPrevName
-                    }
-                    if (encryptPrevDesc !== null) {
-                        op.undo_data.previous_description = encryptPrevDesc
-                    }
-                    deferred.resolve( op )
-                })
-                deferreds.push(deferred)
-                break
-              default :
-                deferreds.push(deferred)
-                deferred.resolve(op)
-                break
-            }
-      })
-      return $.when.all( deferreds )
-  }
-
-  function encryptOp (op) {
-      var encryptName = $.Deferred()
-      var encryptDesc = $.Deferred()
-      var encryptPrevName = $.Deferred()
-      var encryptPrevDesc = $.Deferred()
-
-      var deferred = $.when( encryptName, encryptDesc, encryptPrevName, encryptPrevDesc )
-
-      if (typeof op.data.name !== "undefined") {
-        encryptData(op.data.name).then(function(cipher){
-          encryptName.resolve(cipher.data)
-        })
-      } else {
-          encryptName.resolve(null)
-      }
-      if (typeof op.data.description !== "undefined") {
-        encryptData(op.data.description).then(function(cipher){
-          encryptDesc.resolve(cipher.data)
-        })
-      } else {
-          encryptDesc.resolve(null)
-      }
-      if (typeof op.undo_data.previous_name !== "undefined") {
-        encryptData(op.undo_data.previous_name).then(function(cipher){
-          encryptPrevName.resolve(cipher.data)
-        })
-      } else {
-          encryptPrevName.resolve(null)
-      }
-      if (typeof op.undo_data.previous_description !== "undefined") {
-        encryptData(op.undo_data.previous_description).then(function(cipher){
-          encryptPrevDesc.resolve(cipher.data)
-        })
-      } else {
-          encryptPrevDesc.resolve(null)
-      }
-
-      return deferred
-  }
-  function decryptTree(data) {
-    function decryptChild(project) {
-      var deferred = $.Deferred()
-      deferreds.push(deferred)
-      if (typeof project.ch === 'object') {
-        project.ch.forEach(function(child){
-          decryptChild(child)
-        })
-      }
-      if (project.nm !== null && project.nm.length > 0) {
-        decryptData(project.nm).then(function(cipher){
-          project.nm = cipher.data
-          deferred.resolve()
-        })
-      } else {
-        deferred.resolve()
-      }
-    }
-    var deferreds = []
-    data.projectTreeData.mainProjectTreeInfo.rootProjectChildren.forEach(function(child){
-      decryptChild(child)
-    })
-    return $.when.all( deferreds )
-  }
-  return {
-    init : function (key, pass) {
-      // openpgp.initWorker("/static/js/openpgp.worker.min.js")
-      var selectedKey = openpgp.key.readArmored(key.privkey).keys[0]
-      var decryptedPrivate = selectedKey.decrypt(pass)
-      if (decryptedPrivate) {
-        PGP_KEY = key
-        KEY_PASS = pass
-        openpgp.config.versionstring = '0'
-        openpgp.config.commentstring = '0'
-      } else {
-        throw Error('Failed to decrypt private key.')
-      }
-
-    },
-    encryptOperations : encryptOperations,
-    encryptData: encryptData,
-    decryptData: decryptData,
-    decryptTree: decryptTree,
-  }
-}()
 
 allJSFinishedLoadingCallback();
