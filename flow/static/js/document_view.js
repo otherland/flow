@@ -1175,7 +1175,6 @@ function documentReadyFunc() {
       project_tree_object.initModule();
       project_tree.initializeProjectTrees(MAIN_PROJECT_TREE_INFO, AUXILIARY_PROJECT_TREE_INFOS);
       location_history.init();
-      left_bar.init();
       var a = createPage();
       a.addClass("active");
       a.setPositionAndDimensionsForPage();
@@ -1303,22 +1302,11 @@ jQuery.fn.setPositionAndDimensionsForPage = function() {
     e = h;
     j = f - j;
     setPagePositionAndDimensions(a, j, e);
-    left_bar.updateHoverZoneWidth();
   } else {
-    h = left_bar.getOuterWidth();
-    f = left_bar.getMinimumHorizontalBounds();
-    var n = left_bar.getPostTransitionHorizontalBounds();
-    f = e - f.right;
-    f = Math.min(f, 700 + j);
-    e = n.right + Math.max(Math.round((e - f - n.right) / 2), 0);
+    f = Math.min(e, 700 + j);
+    e = Math.max(Math.round((e - f) / 2), 0);
     j = f - j;
     setPagePositionAndDimensions(a, j, e);
-    left_bar.setHoverZoneWidthOnDesktopWhenLeftBarIsHidden(Math.min(e + 30, h));
-    a = n.right + "px";
-    $("#dropdownMessages").css("left", a);
-    $("#site_message").css("marginLeft", a);
-    $("#fixedPageBottomMessages").css("left", a);
-    $("#bottomLinks").css("marginLeft", a);
   }
 };
 function setPagePositionAndDimensions(a, e, j) {
@@ -1885,7 +1873,6 @@ function setShowCompleted(a) {
     $(".showCompletedButton .show").show();
     $(".showCompletedButton .hide").hide();
   }
-  left_bar.notifyMayNeedToUpdate();
 }
 function shouldShowCompletedProjects() {
   return SHOW_COMPLETED;
@@ -2049,7 +2036,6 @@ function addEvents() {
     getActivePage().setPositionAndDimensionsForPage();
     search.notifyWindowResized();
     item_select.notifyWindowResized();
-    left_bar.notifyMayNeedToUpdate();
   });
   $.address.externalChange(function() {
     location_history.notifyExternalFragmentChange();
@@ -2512,12 +2498,6 @@ function addEvents() {
       return false;
     }
   });
-  if (left_bar.isEnabled() && IS_MOBILE) {
-    $("#logo").tapHandler(null, function() {
-      left_bar.toggleVisibility();
-      return false;
-    });
-  } else {
     $("#logo").clickOrTapHandler({
       event : function() {
         if (!animations.animationsAreInProgress()) {
@@ -2541,7 +2521,6 @@ function addEvents() {
         dom_utils.clearSelection();
       }
     });
-  }
   if (!IS_MOBILE) {
     $(".page.active .project.parent > .name > .content").live("click", function(h) {
       var f = $(this).getProject();
@@ -2832,11 +2811,7 @@ function windowFocusHandler() {
 function windowBlurHandler() {
   WINDOW_FOCUSED = false;
   $("body").addClass("windowBlurred");
-  if (left_bar.isEnabled()) {
-    left_bar.updateRecentSwitcherModifierKeyStatus(false, false);
-  } else {
     saved_views.updateModifierKeyStatus(false, false);
-  }
 }
 function clearUserStorage(a) {
   if (userstorage.isEnabled()) {
@@ -3277,7 +3252,7 @@ jQuery.fn.tapIt = function(a) {
 };
 function createDoNothingWhenInLeftBarRecentSwitcherModeShortcutEventHandler(a) {
   return function(e) {
-    if (left_bar.isEnabled() ? left_bar.inRecentSwitcherMode() : saved_views.HUDIsVisible()) {
+    if (saved_views.HUDIsVisible()) {
       e.preventDefault();
     } else {
       return a.call(this, e);
@@ -3640,11 +3615,7 @@ function addGlobalKeyboardShortcuts() {
   function a(g) {
     var d = g.ctrlKey || g.metaKey;
     g = d && g.shiftKey;
-    if (left_bar.isEnabled()) {
-      left_bar.updateRecentSwitcherModifierKeyStatus(g, d);
-    } else {
-      saved_views.updateModifierKeyStatus(g, d);
-    }
+    saved_views.updateModifierKeyStatus(g, d);
   }
   function e(g) {
     if (search.inSearchMode()) {
@@ -3726,25 +3697,14 @@ function addGlobalKeyboardShortcuts() {
   });
   h.addHandlerForShortcuts("keydown", "shift+*", ["ctrl", "meta"], function() {
     saved_views.toggleCurrentViewSaved();
-    if (!left_bar.isEnabled()) {
-      saved_views.pretendModifierKeysNotPressedUntilTheyAreReleased();
-    }
     return false;
   });
   h.addHandlerForShortcuts("keydown", "shift+;", ["ctrl", "meta"], function() {
-    if (left_bar.isEnabled()) {
-      left_bar.moveRecentSwitcherSelectionUp();
-    } else {
-      saved_views.switchLeft();
-    }
+    saved_views.switchLeft();
     return false;
   });
   h.addHandlerForShortcuts("keydown", ";", ["ctrl", "meta"], function() {
-    if (left_bar.isEnabled()) {
-      left_bar.moveRecentSwitcherSelectionDown();
-    } else {
       saved_views.switchRight();
-    }
     return false;
   });
   j.bind("keydown", function(g) {
@@ -3755,36 +3715,20 @@ function addGlobalKeyboardShortcuts() {
       }
     }
     a(g);
-    if (left_bar.isEnabled()) {
-      if (left_bar.inRecentSwitcherMode()) {
-        switch(g.keyCode) {
-          case $.ui.keyCode.UP:
-            left_bar.moveRecentSwitcherSelectionUp();
-            return false;
-          case $.ui.keyCode.DOWN:
-            left_bar.moveRecentSwitcherSelectionDown();
-            return false;
-          case $.ui.keyCode.ENTER:
-            left_bar.switchToRecentSwitcherSelection();
-            return false;
-        }
-      }
-    } else {
-      if (saved_views.HUDIsVisible()) {
-        switch(g.keyCode) {
-          case $.ui.keyCode.LEFT:
-            saved_views.switchLeft();
-            return false;
-          case $.ui.keyCode.RIGHT:
-            saved_views.switchRight();
-            return false;
-          case $.ui.keyCode.ENTER:
-            saved_views.switchToSelectedViewIfAppropriate();
-            return false;
-          default:
-            saved_views.hideIfModifierNotPressed();
-            return;
-        }
+    if (saved_views.HUDIsVisible()) {
+      switch(g.keyCode) {
+        case $.ui.keyCode.LEFT:
+          saved_views.switchLeft();
+          return false;
+        case $.ui.keyCode.RIGHT:
+          saved_views.switchRight();
+          return false;
+        case $.ui.keyCode.ENTER:
+          saved_views.switchToSelectedViewIfAppropriate();
+          return false;
+        default:
+          saved_views.hideIfModifierNotPressed();
+          return;
       }
     }
     d = g.ctrlKey || (g.altKey || (g.metaKey || g.shiftKey));
@@ -10362,7 +10306,6 @@ var operations = function() {
           return "";
         });
         this.applyPendingOperations(true);
-        left_bar.notifyMayNeedToUpdate();
         return{
           errorEncountered : false
         };
@@ -10628,9 +10571,6 @@ var operations = function() {
             // useful
             p.push(op);
           }
-        }
-        if (p.length > 0) {
-          left_bar.notifyMayNeedToUpdate();
         }
         return p;
       },
@@ -11886,7 +11826,6 @@ var location_history = function() {
     s = B;
     if (!m) {
       f().markVisited(s);
-      left_bar.notifyLocationChanged(s);
     }
   }
   function g(B) {
@@ -12050,11 +11989,7 @@ var location_history = function() {
     },
     markVisited : function(B) {
       var J = B.getCanonicalLocation().getUniqueId();
-      if (left_bar.locationIsPresentInNonRecentSection(B)) {
-        this._mostRecentLeftBarLocationsTimestampMap.storeCurrentTimestamp(J);
-      } else {
         this._mostRecentNonLeftBarLocationsTimestampMap.storeCurrentTimestamp(J);
-      }
     },
     getLastViewTimestamp : function(B) {
       var J = B.getCanonicalLocation().getUniqueId();
@@ -12177,7 +12112,6 @@ var location_history = function() {
       } else {
         if (m && !B) {
           f().markVisited(s);
-          left_bar.notifyLocationChanged(s);
           if (!IS_PACKAGED_APP) {
             var J = s.getZoomedProjectId();
             J = k(J);
@@ -18388,55 +18322,7 @@ var saved_views = function() {
           search.searchProjectTree(ja, true, ga, true);
           ga.constructProjectTreeAsSelected();
           k(true);
-          if (L === "animate") {
-            L = location_history.getLastSavedScrollPositionForLocation(M.getLocation());
-            if (L === null) {
-              L = 0;
-            }
-            M = left_bar.getPostTransitionHorizontalBounds();
-            ja = $(window).width();
-            var O = C.outerWidth();
-            M = (ja - O - M.right) / 2 + O;
-            ba = ba === "right" ? -1 : 1;
-            ja = -ba;
-            O = getPagePositionFromStyle(la).x;
-            var R = getPagePositionFromStyle(C).x;
-            var S = O + ba * M;
-            ba = R + ja * M;
-            la.css({
-              position : "absolute",
-              top : L - U,
-              left : 0
-            });
-            setPagePositionStyle(C, ba, 0);
-            $(window).scrollTop(L);
-            animations.getAnimationCounter().addCallback(ka);
-            var W = function() {
-              C.incrementAnimationCounter().transition({
-                x : R + "px"
-              }, animations.getAnimationTiming("pageSlide"), function() {
-                animations.getAnimationCounter().decrement();
-              });
-              if (!V) {
-                la.incrementAnimationCounter().transition({
-                  x : S + "px"
-                }, animations.getAnimationTiming("pageSlide"), function() {
-                  animations.getAnimationCounter().decrement();
-                });
-              }
-            };
-            if (IS_FIREFOX) {
-              animations.getAnimationCounter().increment();
-              dom_utils.executeAfterRepaint(function() {
-                W();
-                animations.getAnimationCounter().decrement();
-              });
-            } else {
-              W();
-            }
-          } else {
-            ka();
-          }
+          ka();
         }
       }
     }
@@ -18666,15 +18552,12 @@ var saved_views = function() {
       if (z && !F) {
         o();
       } else {
-        if (!left_bar.isEnabled()) {
           l(false, "none");
           e();
           J = setTimeout(q, 1500);
-        }
       }
       $("#savedViewHUDButton").flashColor("#aaa");
     }
-    left_bar.notifyMayNeedToUpdate();
   }
   var r = null;
   var x = null;
@@ -18916,7 +18799,7 @@ var saved_views = function() {
   };
   return{
     init : function() {
-      if (N = !project_tree.getMainProjectTree().isShared() && (!IS_MOBILE || left_bar.isEnabled())) {
+      if (N = !project_tree.getMainProjectTree().isShared() && (!IS_MOBILE)) {
         a(true);
         if (userstorage.isEnabled()) {
           var I = userstorage.readJSON("savedViewLastViewedTimestamps") || {};
@@ -19036,1125 +18919,6 @@ var saved_views = function() {
     toggleCurrentViewSaved : v,
     getValidSavedLocations : function() {
       return r.getValidViewsAsLocations();
-    }
-  };
-}();
-var left_bar = function() {
-  function a() {
-    var H = null;
-    var K = function() {
-      var Q = date_time.getCurrentTimeInMS();
-      if (ka === null) {
-        ka = Q;
-      }
-      if (SETTINGS.auto_hide_left_bar.value) {
-        if (!E) {
-          if (H !== null) {
-            clearTimeout(H);
-            H = null;
-          }
-          Q = Q - ka;
-          H = setTimeout(function() {
-            var Y = H;
-            setTimeout(function() {
-              if (H === Y) {
-                H = null;
-                j(true);
-              }
-            }, 0);
-          }, Q >= 150 ? 50 : 150 - Q + 50);
-        }
-      }
-    };
-    var P = function() {
-      ka = null;
-      if (SETTINGS.auto_hide_left_bar.value) {
-        if (H !== null) {
-          clearTimeout(H);
-          H = null;
-        }
-        if (E) {
-          j(false);
-        }
-      }
-    };
-    $("#leftBarHoverZone, #leftBar").mouseenter(function() {
-      K();
-    }).mousemove(function() {
-      K();
-    }).mouseleave(function(Q) {
-      Q = $(Q.relatedTarget);
-      if (Q.closest("#leftBarHoverZone, #leftBar").length !== 1) {
-        if (!(E && Q.closest("#header").length === 1)) {
-          P();
-        }
-      }
-    });
-    $("#header").mouseleave(function(Q) {
-      if (ka !== null) {
-        if ($(Q.relatedTarget).closest("#leftBarHoverZone, #leftBar").length !== 1) {
-          P();
-        }
-      }
-    });
-    y.mousedown(function(Q) {
-      if ($(Q.target).closest(".leftBarSectionContentsScrollTrack").length !== 1) {
-        Q.preventDefault();
-        Q.stopPropagation();
-      }
-    }).bind("wheel", function(Q) {
-      if ($(Q.target).closest(".leftBarSectionContentsScrollable").length === 0) {
-        Q.preventDefault();
-      }
-    }).bind("transitionend", function(Q) {
-      if (Q.originalEvent.propertyName === "transform") {
-        if (!y.hasClass("isOut")) {
-          y.addClass("isFullyHidden");
-        }
-      }
-    });
-    $(window).mouseout(function(Q) {
-      if (Q.relatedTarget === null) {
-        P();
-      }
-    });
-  }
-  function e() {
-    var H = y.children(".leftBarInnerContainer");
-    H.html('<div class="leftBarContents"><div class="leftBarSections"><div class="leftBarSection"><div class="leftBarSectionName">SECTION</div><div class="leftBarSectionContents"><div class="leftBarSectionContentsScrollable"><div class="leftBarEmptySection"></div><div class="leftBarLocation"><div class="leftBarLocationName">Name</div><div class="leftBarLocationSearchStringContainer"><span class="leftBarLocationSearchString">search string</span></div></div></div></div></div></div></div>');
-    var K = H.find(".leftBarSection").outerHeight();
-    var P = H.find(".leftBarSectionContents").outerHeight();
-    var Q = H.find(".leftBarEmptySection").outerHeight();
-    var Y = H.find(".leftBarLocation").outerHeight();
-    var aa = H.find(".leftBarLocationSearchStringContainer").outerHeight();
-    K = K - P;
-    Y = Y - aa;
-    H.html("");
-    return{
-      sectionNotIncludingContents : K,
-      emptySectionNotice : Q,
-      locationNotIncludingSearchString : Y,
-      searchString : aa
-    };
-  }
-  function j(H, K) {
-    if (K === undefined) {
-      K = false;
-    }
-    if (H !== E) {
-      if (!(!H && M)) {
-        if (E = H) {
-          y.addClass("isOut");
-          y.removeClass("isFullyHidden");
-        } else {
-          y.removeClass("isOut");
-          if (K || y.position().left === h()) {
-            y.addClass("isFullyHidden");
-          }
-        }
-        var P = E ? f() : h();
-        dom_utils.setTransformStyleForElement(y[0], "translate(" + P + "px, 0px)");
-        if (!K) {
-          getActivePage().setPositionAndDimensionsForPage();
-          n();
-        }
-        if (!H && X !== null) {
-          P = X.outerWidth();
-          dom_utils.setTransformStyleForElement(X[0], "translate(-" + P + "px, 0px)");
-        }
-      }
-    }
-  }
-  function h() {
-    if (!t) {
-      return-A;
-    }
-    return IS_MOBILE ? -A : F - A;
-  }
-  function f() {
-    if (!t) {
-      return-A;
-    }
-    return 0;
-  }
-  function n() {
-    var H = IS_MOBILE ? E ? $(window).width() : 0 : SETTINGS.auto_hide_left_bar.value ? E ? A + z : D : 0;
-    $("#leftBarHoverZone").width(H);
-  }
-  function l(H, K) {
-    if (K === undefined) {
-      K = function() {
-      };
-    }
-    if (M) {
-      b();
-    }
-    if (animations.animationsAreInProgress()) {
-      K();
-    } else {
-      var P = H.toProjectReference();
-      var Q = H.getSearchString();
-      if (P === null) {
-        K();
-      } else {
-        var Y = animations.getAnimationSpeed(V);
-        var aa = location_history.getCurrentLocation();
-        if (H.equals(aa)) {
-          K();
-        } else {
-          if (!u(aa)) {
-            v(aa);
-          }
-          v(H);
-          var fa;
-          fa = J !== null && J.equals(H) ? N === "right" ? "left" : "right" : "right";
-          J = aa;
-          N = fa;
-          selectOnActivePage(".mainTreeRoot").clearControlsUnderProject();
-          item_select.clearItemSelection();
-          aa = $(window).scrollTop();
-          $("body").height();
-          var na = function() {
-            $(".page:not(.active)").deletePages();
-            $(".page.active").css("transition", "");
-            if (!location_history.restoreLastSavedClientViewStateForCurrentLocation()) {
-              $(window).scrollTop(0);
-              if (!IS_MOBILE) {
-                var pa = selectOnActivePage(".selected");
-                var oa = pa.getVisibleChildren().first();
-                if (oa.length === 0) {
-                  oa = pa.is(".mainTreeRoot") ? null : pa;
-                }
-                if (oa !== null) {
-                  oa.getName().moveCursorToBeginning();
-                }
-              }
-            }
-            K();
-          };
-          var ha = $(".page.active");
-          ha.removeClass("active");
-          ha.find(".content").removeAttr("contenteditable");
-          var da = createPage();
-          da.addClass("active");
-          da.setPositionAndDimensionsForPage();
-          CURRENTLY_ACTIVE_PAGE = da;
-          if (shouldShowCompletedProjects()) {
-            da.addClass("showCompleted");
-          }
-          location_history.setLocationModificationInProgress(true);
-          search.searchProjectTree(Q, true, P, true);
-          P.constructProjectTreeAsSelected();
-          saved_views.notifyViewChanged();
-          P.setPageTitleAndFragmentPathForProject();
-          location_history.setLocationModificationInProgress(false);
-          if (Y === "animate") {
-            P = location_history.getLastSavedScrollPositionForLocation(H);
-            if (P === null) {
-              P = 0;
-            }
-            Q = left_bar.getPostTransitionHorizontalBounds();
-            Y = $(window).width();
-            var ia = da.outerWidth();
-            Q = (Y - ia - Q.right) / 2 + ia;
-            var ma = fa === "right" ? -1 : 1;
-            fa = -ma;
-            Y = getPagePositionFromStyle(ha).x;
-            var qa = getPagePositionFromStyle(da).x;
-            var sa = Y + ma * Q;
-            fa = qa + fa * Q;
-            ha.css({
-              position : "absolute",
-              top : P - aa,
-              left : 0
-            });
-            setPagePositionStyle(da, fa, 0);
-            $(window).scrollTop(P);
-            animations.getAnimationCounter().addCallback(na);
-            var ra = function() {
-              da.incrementAnimationCounter().transition({
-                x : qa + "px"
-              }, animations.getAnimationTiming("pageSlide"), function() {
-                animations.getAnimationCounter().decrement();
-              });
-              if (T) {
-                ha.incrementAnimationCounter().transition({
-                  opacity : 0
-                }, animations.getAnimationTiming("pageSlide"), function() {
-                  animations.getAnimationCounter().decrement();
-                });
-              } else {
-                if (ma === -1) {
-                  X = ha;
-                }
-                ha.incrementAnimationCounter().transition({
-                  x : sa + "px"
-                }, animations.getAnimationTiming("pageSlide"), function() {
-                  X = null;
-                  animations.getAnimationCounter().decrement();
-                });
-              }
-            };
-            if (IS_FIREFOX) {
-              animations.getAnimationCounter().increment();
-              dom_utils.executeAfterRepaint(function() {
-                ra();
-                animations.getAnimationCounter().decrement();
-              });
-            } else {
-              ra();
-            }
-          } else {
-            na();
-          }
-        }
-      }
-    }
-  }
-  function q(H) {
-    return H.map(function(K) {
-      var P = {
-        name : K.name,
-        className : K.className,
-        locations : K.locations,
-        key : K.name
-      };
-      if ("height" in K) {
-        P.height = K.height;
-      }
-      if ("extraClasses" in K) {
-        P.extraClasses = K.extraClasses;
-      }
-      if ("isMRVSorted" in K) {
-        P.isMRVSorted = K.isMRVSorted;
-      }
-      if ("isRecentSection" in K) {
-        P.isRecentSection = K.isRecentSection;
-      }
-      return React.createElement(R, P);
-    });
-  }
-  function o() {
-    if (t) {
-      if (B === null) {
-        B = setTimeout(function() {
-          B = null;
-          c();
-        }, 0);
-      }
-    }
-  }
-  function c() {
-    var H = x(saved_views.getValidSavedLocations());
-    var K = x(g(), !shouldShowCompletedProjects());
-    var P = x(d());
-    K = [{
-      name : "STARRED",
-      className : "starredSection",
-      heightFraction : 0.35,
-      locations : H
-    }, {
-      name : "HOME",
-      className : "homeSection",
-      heightFraction : 0.25,
-      locations : K
-    }, {
-      name : "SHARED",
-      className : "sharedSection",
-      heightFraction : 0.15,
-      locations : P
-    }];
-    if (I === null) {
-      p(K);
-    }
-    P = {
-      name : "RECENT",
-      className : "recentSection",
-      heightFraction : 0.25,
-      locations : r(),
-      isMRVSorted : true
-    };
-    if (M) {
-      P.extraClasses = "inRecentSwitcherMode";
-    }
-    G = new utils.Set;
-    K.forEach(function(Y) {
-      Y.locations.forEach(function(aa) {
-        aa = aa.getCanonicalLocation().getUniqueId();
-        G.add(aa);
-      });
-    });
-    H = y.children(".leftBarInnerContainer");
-    if (IS_MOBILE) {
-      K = React.createElement(C, {
-        allSectionsExceptRecent : K,
-        recentSection : P
-      });
-    } else {
-      var Q = H.height();
-      K = React.createElement(la, {
-        allSectionsExceptRecent : K,
-        recentSection : P,
-        availableHeight : Q,
-        autoHideEnabled : SETTINGS.auto_hide_left_bar.value
-      });
-    }
-    ReactDOM.render(K, H[0]);
-  }
-  function g() {
-    var H = project_tree.getMainProjectTree().getRootProjectChildren().filter(function(K) {
-      return!utils.isOnlyWhitespace(global_project_tree_object.getName(K));
-    });
-    return k(H);
-  }
-  function d() {
-    var H = project_tree.getAllProjectTreesHelper().getSharedProjects();
-    var K = project_tree.getAllProjectTreesHelper().getSharedSubtreePlaceholders();
-    H = H.concat(K);
-    return k(H);
-  }
-  function k(H) {
-    return H.map(function(K) {
-      K = global_project_tree_object.getProjectReference(K);
-      return location_history.newLocationFromZoomedProjectReference(K);
-    });
-  }
-  function p(H) {
-    I = new utils.LookupTable(ea);
-    var K = {};
-    H.forEach(function(P) {
-      P.locations.forEach(function(Q) {
-        if (location_history.getLastViewTimestampForLocation(Q) !== null) {
-          var Y = Q.getUniqueId();
-          K[Y] = Q;
-        }
-      });
-    });
-    H = utils.objectPropertyValues(K);
-    H = x(H, false, true);
-    H = H.slice(0, Math.min(ea, H.length));
-    H.reverse();
-    H.forEach(function(P) {
-      v(P);
-    });
-  }
-  function v(H) {
-    I.add(H.getCanonicalLocation().getUniqueId(), H);
-  }
-  function r() {
-    var H = I.getMostRecentlyAddedKeys(ea);
-    H.reverse();
-    var K = [];
-    H.forEach(function(P) {
-      P = I.get(P);
-      if (P.toProjectReference() !== null) {
-        K.push(P);
-      }
-    });
-    return K;
-  }
-  function x(H, K, P) {
-    if (K === undefined) {
-      K = false;
-    }
-    if (P === undefined) {
-      P = false;
-    }
-    var Q = [];
-    var Y = 0;
-    for (;Y < H.length;Y++) {
-      var aa = H[Y];
-      var fa = aa.toProjectReference();
-      if (!(K && fa.isCompleted())) {
-        var na = location_history.getLastViewTimestampForLocation(aa);
-        Q.push({
-          location : aa,
-          lastViewTimestamp : na !== null ? na : 0,
-          sortablePath : fa.getSortablePath()
-        });
-      }
-    }
-    Q.sort(function(ha, da) {
-      if (P) {
-        if (ha.lastViewTimestamp < da.lastViewTimestamp) {
-          return 1;
-        } else {
-          if (ha.lastViewTimestamp > da.lastViewTimestamp) {
-            return-1;
-          }
-        }
-      }
-      if (ha.sortablePath < da.sortablePath) {
-        return-1;
-      } else {
-        if (ha.sortablePath > da.sortablePath) {
-          return 1;
-        }
-      }
-      var ia = ha.location.getSearchQuery();
-      var ma = da.location.getSearchQuery();
-      return ia === null && ma !== null ? -1 : ia !== null && ma === null ? 1 : ia < ma ? -1 : ia > ma ? 1 : 0;
-    });
-    return Q.map(function(ha) {
-      return ha.location;
-    });
-  }
-  function u(H) {
-    if (G === null) {
-      return false;
-    }
-    H = H.getCanonicalLocation().getUniqueId();
-    return G.contains(H);
-  }
-  function b() {
-    if (M) {
-      M = false;
-      U = null;
-      o();
-    }
-  }
-  function s() {
-    if (M) {
-      var H = U;
-      b();
-      if (ja !== null) {
-        ja.scrollToTop();
-      }
-      var K = function() {
-        m();
-      };
-      if (H !== null) {
-        l(H, K);
-      } else {
-        m();
-      }
-    }
-  }
-  function m() {
-    if (!IS_MOBILE) {
-      if (SETTINGS.auto_hide_left_bar.value) {
-        if (ka === null) {
-          j(false);
-        }
-      }
-    }
-  }
-  function w(H) {
-    if (M) {
-      var K = r();
-      var P = null;
-      if (U !== null) {
-        var Q = 0;
-        for (;Q < K.length;Q++) {
-          if (K[Q].equals(U)) {
-            P = Q;
-            break;
-          }
-        }
-      }
-      Q = null;
-      if (P !== null) {
-        if (H === "up") {
-          Q = P === 0 ? K.length - 1 : P - 1;
-        } else {
-          if (H === "down") {
-            Q = P === K.length - 1 ? 0 : P + 1;
-          }
-        }
-      } else {
-        if (K.length > 0) {
-          Q = 0;
-        }
-      }
-      U = Q !== null ? K[Q] : null;
-    } else {
-      H = location_history.getCurrentLocation();
-      v(H);
-      M = true;
-      U = H;
-      if (SETTINGS.auto_hide_left_bar.value) {
-        j(true);
-      }
-    }
-    o();
-  }
-  var t = false;
-  var y = null;
-  var A = null;
-  var F = 10;
-  var z = 25;
-  var D = null;
-  var E = null;
-  var G = null;
-  var B = null;
-  var J = null;
-  var N = null;
-  var T = false;
-  var V = "animate";
-  var X = null;
-  var ea = 8;
-  var I = null;
-  var L = null;
-  var M = false;
-  var U = null;
-  var ba = false;
-  var ga = false;
-  var ja = null;
-  var ka = null;
-  var la = React.createClass({
-    propTypes : {
-      allSectionsExceptRecent : React.PropTypes.array.isRequired,
-      recentSection : React.PropTypes.object.isRequired,
-      availableHeight : React.PropTypes.number.isRequired,
-      autoHideEnabled : React.PropTypes.bool.isRequired
-    },
-    render : function() {
-      var siblings = this.props.allSectionsExceptRecent.map(function(da) {
-        return utils.copyObject(da);
-      });
-      var section = utils.copyObject(this.props.recentSection);
-      var availableHeight = this.props.availableHeight;
-      var height = Math.floor(availableHeight * section.heightFraction);
-      section.height = height;
-      availableHeight -= height;
-      siblings.forEach(function(da) {
-        var ia = L.sectionNotIncludingContents;
-        if (da.locations.length === 0) {
-          ia += L.emptySectionNotice;
-        } else {
-          da.locations.forEach(function(ma) {
-            ia += L.locationNotIncludingSearchString;
-            if (ma.getSearchQuery() !== null) {
-              ia += L.searchString;
-            }
-          });
-        }
-        da.maxHeight = ia;
-      });
-      for (;;) {
-        var Y = availableHeight;
-        var aa = 0;
-        var fa = [];
-        siblings.forEach(function(da) {
-          if ("height" in da && da.height === -1) {
-            Y -= da.maxHeight;
-          } else {
-            aa += da.heightFraction;
-            fa.push(da);
-          }
-        });
-        var na = [];
-        var ha = false;
-        fa.forEach(function(da) {
-          var ia = Math.floor(da.heightFraction / aa * Y);
-          if (da.maxHeight <= ia) {
-            da.height = ia = -1;
-            ha = true;
-          }
-          na.push(ia);
-        });
-        if (!ha) {
-          fa.forEach(function(da, ia) {
-            da.height = na[ia];
-          });
-          break;
-        }
-      }
-      section.isRecentSection = true;
-      siblings = siblings.concat([section]);
-      siblings = q(siblings);
-      return React.DOM.div({
-        className : "leftBarContents"
-      }, React.DOM.div({
-        className : "leftBarSections"
-      }, siblings), React.createElement(O, {
-        autoHideEnabled : this.props.autoHideEnabled
-      }));
-    }
-  });
-  var C = React.createClass({
-    propTypes : {
-      allSectionsExceptRecent : React.PropTypes.array.isRequired,
-      recentSection : React.PropTypes.object.isRequired
-    },
-    render : function() {
-      var H = utils.copyObject(this.props.recentSection);
-      H.isRecentSection = true;
-      H = this.props.allSectionsExceptRecent.concat([H]);
-      H = q(H);
-      return React.DOM.div({
-        className : "leftBarContents"
-      }, React.DOM.div({
-        className : "leftBarSections"
-      }, H));
-    }
-  });
-  var O = React.createClass({
-    propTypes : {
-      autoHideEnabled : React.PropTypes.bool.isRequired
-    },
-    render : function() {
-      var H = "leftBarAutoHideToggler";
-      if (this.props.autoHideEnabled) {
-        H += " autoHideEnabled";
-      }
-      H = React.DOM.div({
-        className : H,
-        onClick : this._handleClick
-      });
-      return React.createElement(react_utils.TooltipContainer, {
-        containedElement : H,
-        getTooltipTextCallback : this._getTooltipText
-      });
-    },
-    _handleClick : function(H) {
-
-    },
-    _getTooltipText : function() {
-      return this.props.autoHideEnabled ? "Bar set to hide when mouse leaves" : "Bar set to always show";
-    }
-  });
-  var R = React.createClass({
-    propTypes : {
-      name : React.PropTypes.string.isRequired,
-      className : React.PropTypes.string.isRequired,
-      extraClasses : React.PropTypes.string,
-      height : React.PropTypes.number,
-      locations : React.PropTypes.array.isRequired,
-      isMRVSorted : React.PropTypes.bool,
-      isRecentSection : React.PropTypes.bool
-    },
-    render : function() {
-      if (this.props.locations.length > 0) {
-        var H = this._notifyClickOnLocation;
-        var K = this.props.locations.map(function(Q, Y) {
-          return React.createElement(S, {
-            ref : "location-" + Y,
-            location : Q,
-            notifyClickOnLocationCallback : H,
-            key : Q.getUniqueId()
-          });
-        });
-      } else {
-        K = React.DOM.div({
-          className : "leftBarEmptySection"
-        });
-      }
-      var P = {
-        className : "leftBarSection " + this.props.className + ("extraClasses" in this.props ? " " + this.props.extraClasses : "")
-      };
-      if ("height" in this.props && this.props.height !== -1) {
-        P.style = {
-          height : this.props.height + "px"
-        };
-      }
-      return React.DOM.div(P, React.DOM.div({
-        className : "leftBarSectionName"
-      }, this.props.name), React.createElement(W, {
-        ref : "sectionContents"
-      }, K));
-    },
-    componentDidMount : function() {
-      if ("isRecentSection" in this.props && this.props.isRecentSection) {
-        ja = this;
-      }
-      this._componentDidMountOrUpdate();
-    },
-    componentWillUnmount : function() {
-      if ("isRecentSection" in this.props && this.props.isRecentSection) {
-        ja = null;
-      }
-    },
-    componentDidUpdate : function() {
-      this._componentDidMountOrUpdate();
-    },
-    _componentDidMountOrUpdate : function() {
-      if ("isRecentSection" in this.props) {
-        if (this.props.isRecentSection) {
-          if (M) {
-            if (U !== null) {
-              this._scrollToShowLocation(U, true);
-            }
-          }
-        }
-      }
-    },
-    scrollToTop : function() {
-      this.refs.sectionContents.setScrollTop(0);
-    },
-    _notifyClickOnLocation : function(H) {
-      if ("isMRVSorted" in this.props && this.props.isMRVSorted) {
-        this.refs.sectionContents.setScrollTop(0);
-      } else {
-        this._scrollToShowLocation(H);
-      }
-    },
-    _scrollToShowLocation : function(H, K) {
-      if (K === undefined) {
-        K = false;
-      }
-      var P = null;
-      var Q = 0;
-      for (;Q < this.props.locations.length;Q++) {
-        if (this.props.locations[Q].equals(H)) {
-          P = ReactDOM.findDOMNode(this.refs["location-" + Q]);
-          break;
-        }
-      }
-      if (P !== null) {
-        this.refs.sectionContents.scrollToShowChild(P, K);
-      }
-    }
-  });
-  var S = React.createClass({
-    propTypes : {
-      location : React.PropTypes.object.isRequired,
-      notifyClickOnLocationCallback : React.PropTypes.func.isRequired
-    },
-    getInitialState : function() {
-      return{
-        shouldHaveTooltip : false
-      };
-    },
-    render : function() {
-      var H = this.props.location.toProjectReference();
-      H = H.isMainTreeRoot() ? "Home" : H.getName();
-      var K = this.props.location.getSearchString();
-      var P = "leftBarLocation";
-      if (this.props.location.equals(location_history.getCurrentLocation())) {
-        P += " isCurrentLocation";
-      }
-      if (M && (U !== null && this.props.location.equals(U))) {
-        P += " isRecentSwitcherCurrentSelection";
-      }
-      P = {
-        className : P,
-        onClick : this._handleClick,
-        onMouseEnter : this._handleMouseEnter
-      };
-      if (this.state.shouldHaveTooltip) {
-        var Q = content_text.getPlainText(H);
-        if (K.length > 0) {
-          Q += ", \n" + K;
-        }
-        P.title = Q;
-      }
-      return React.DOM.div(P, React.DOM.div({
-        className : "leftBarLocationName",
-        ref : "leftBarLocationName",
-        dangerouslySetInnerHTML : {
-          __html : content_text.getHtml(H)
-        }
-      }), React.DOM.div({
-        className : "leftBarLocationSearchStringContainer",
-        ref : "leftBarLocationSearchStringContainer"
-      }, React.DOM.span({
-        className : "leftBarLocationSearchString"
-      }, K)));
-    },
-    _handleClick : function() {
-      this.props.notifyClickOnLocationCallback(this.props.location);
-      l(this.props.location);
-    },
-    _handleMouseEnter : function() {
-      var H = this.refs.leftBarLocationName;
-      var K = this.refs.leftBarLocationSearchStringContainer;
-      H = H.scrollWidth > H.offsetWidth || K.scrollWidth > K.offsetWidth;
-      if (H !== this.state.shouldHaveTooltip) {
-        this.setState({
-          shouldHaveTooltip : H
-        });
-      }
-    }
-  });
-  var W = React.createClass({
-    propTypes : {},
-    getInitialState : function() {
-      return{
-        height : 0,
-        scrollHeight : 0,
-        scrollTop : 0
-      };
-    },
-    render : function() {
-      var H = this.state.scrollTop > 0;
-      var K = this.state.scrollTop < this.state.scrollHeight - this.state.height;
-      return React.DOM.div({
-        className : "leftBarSectionContents"
-      }, React.DOM.div({
-        className : "leftBarSectionContentsScrollable",
-        ref : "leftBarSectionContentsScrollable",
-        onScroll : this._handleScroll,
-        onWheel : this._handleWheel
-      }, this.props.children), React.createElement(Z, {
-        className : "leftBarSectionContentsTopFader",
-        isVisible : H
-      }), React.createElement(Z, {
-        className : "leftBarSectionContentsBottomFader",
-        isVisible : K
-      }), React.createElement(ca, {
-        height : this.state.height,
-        scrollHeight : this.state.scrollHeight,
-        scrollTop : this.state.scrollTop,
-        setScrollTopCallback : this.setScrollTop
-      }));
-    },
-    componentDidMount : function() {
-      this._updateScrollState();
-    },
-    componentDidUpdate : function() {
-      this._updateScrollState();
-    },
-    setScrollTop : function(H, K) {
-      if (K === undefined) {
-        K = false;
-      }
-      var P = $(this.refs.leftBarSectionContentsScrollable);
-      var Q = P.height();
-      H = utils.clamp(H, 0, P[0].scrollHeight - Q);
-      if (K) {
-        P.animate({
-          scrollTop : H
-        }, 100);
-      } else {
-        P.scrollTop(H);
-        return P.scrollTop();
-      }
-    },
-    scrollToShowChild : function(H, K) {
-      if (K === undefined) {
-        K = false;
-      }
-      var P = $(H);
-      var Q = P.position().top;
-      var Y = P.outerHeight();
-      P = $(this.refs.leftBarSectionContentsScrollable);
-      var aa = P.height();
-      var fa = K ? Y / 2 : 0;
-      Y = aa - Y - fa;
-      aa = null;
-      if (Q < fa) {
-        aa = fa;
-      } else {
-        if (Q > Y) {
-          aa = Y;
-        }
-      }
-      if (aa !== null) {
-        this.setScrollTop(P.scrollTop() + (Q - aa), true);
-      }
-    },
-    _handleScroll : function() {
-      this._updateScrollState();
-    },
-    _updateScrollState : function() {
-      var H = $(this.refs.leftBarSectionContentsScrollable);
-      var K = H.height();
-      var P = H[0].scrollHeight;
-      H = H.scrollTop();
-      K = {
-        height : K,
-        scrollHeight : P,
-        scrollTop : H
-      };
-      if (!utils.objectsAreShallowEqual(K, this.state)) {
-        this.setState(K);
-      }
-    },
-    _handleWheel : function(H) {
-      if (H.deltaMode === 0) {
-        var K = $(this.refs.leftBarSectionContentsScrollable);
-        var P = H.deltaY;
-        P = K.scrollTop() + P;
-        var Q = K[0].scrollHeight - K.height();
-        if (P < 0) {
-          K.scrollTop(0);
-          H.preventDefault();
-        } else {
-          if (P > Q) {
-            K.scrollTop(Q);
-            H.preventDefault();
-          }
-        }
-        H.stopPropagation();
-      }
-    }
-  });
-  var Z = React.createClass({
-    propTypes : {
-      className : React.PropTypes.string.isRequired,
-      isVisible : React.PropTypes.bool.isRequired
-    },
-    render : function() {
-      return React.DOM.div({
-        className : this.props.className,
-        style : {
-          opacity : this.props.isVisible ? "1" : "0"
-        }
-      });
-    }
-  });
-  var ca = React.createClass({
-    propTypes : {
-      height : React.PropTypes.number.isRequired,
-      scrollHeight : React.PropTypes.number.isRequired,
-      scrollTop : React.PropTypes.number.isRequired,
-      setScrollTopCallback : React.PropTypes.func.isRequired
-    },
-    getInitialState : function() {
-      return{
-        dragging : false
-      };
-    },
-    render : function() {
-      var H = {};
-      var K = {};
-      if (this.props.scrollHeight <= this.props.height) {
-        H = {
-          display : "none"
-        };
-      } else {
-        K = Math.max(this.props.height / this.props.scrollHeight * this.props.height, 15);
-        K = {
-          height : K + "px",
-          top : this.props.scrollTop / (this.props.scrollHeight - this.props.height) * (this.props.height - K) + "px"
-        };
-      }
-      var P = "leftBarSectionContentsScrollTrack";
-      if (this.state.dragging) {
-        P += " dragging";
-      }
-      return React.DOM.div({
-        className : P,
-        ref : "leftBarSectionContentsScrollTrack",
-        style : H,
-        onMouseDown : this._handleScrollTrackMouseDown
-      }, React.DOM.div({
-        className : "leftBarSectionContentsScrollThumb",
-        style : K
-      }));
-    },
-    _handleScrollTrackMouseDown : function(H) {
-      if (H.button === 0) {
-        var K;
-        if (H.target === this.refs.leftBarSectionContentsScrollTrack) {
-          var P = $(this.refs.leftBarSectionContentsScrollTrack);
-          var Q = P.height();
-          P = P.offset();
-          K = this.props.setScrollTopCallback((H.pageY - P.top) / Q * this.props.scrollHeight - this.props.height / 2);
-        } else {
-          K = this.props.scrollTop;
-        }
-        this.setState({
-          dragging : true
-        });
-        var Y = this;
-        var aa = H.clientY;
-        $(window).bind("mousemove.leftBarSectionContentsScrollDrag", function(fa) {
-          Y.props.setScrollTopCallback(K + (fa.clientY - aa) * (Y.props.scrollHeight / Y.props.height));
-        }).bind("mouseup.leftBarSectionContentsScrollDrag", function() {
-          $(window).unbind(".leftBarSectionContentsScrollDrag");
-          Y.setState({
-            dragging : false
-          });
-        });
-        H.preventDefault();
-      }
-    }
-  });
-  return{
-    init : function() {
-      if (!project_tree.getMainProjectTree().isShared() && (window.USER_IS_LEFT !== undefined && USER_IS_LEFT)) {
-        t = true;
-      }
-      y = $("#leftBar");
-      L = e(y);
-      if (!t) {
-        $("#leftBar").css("visibility", "hidden");
-        $("#leftBarHoverZone").css("visibility", "hidden");
-      }
-      A = y.outerWidth();
-      o();
-      y.css("transition", "none");
-      j(IS_MOBILE ? false : !SETTINGS.auto_hide_left_bar.value, true);
-      setTimeout(function() {
-        y.css("transition", "");
-      }, 0);
-      if (!IS_MOBILE) {
-        a();
-      }
-    },
-    isEnabled : function() {
-      return t;
-    },
-    getOuterWidth : function() {
-      return A;
-    },
-    getMinimumHorizontalBounds : function() {
-      var H = IS_MOBILE ? h() : SETTINGS.auto_hide_left_bar.value ? h() : f();
-      return{
-        left : H,
-        right : H + A
-      };
-    },
-    getPostTransitionHorizontalBounds : function() {
-      var H = dom_utils.getTransformTranslateParametersFromStyle(y[0]);
-      return{
-        left : H.x,
-        right : H.x + y.outerWidth()
-      };
-    },
-    setHoverZoneWidthOnDesktopWhenLeftBarIsHidden : function(H) {
-      if (t) {
-        D = H;
-        n();
-      }
-    },
-    updateHoverZoneWidth : n,
-    registerAutoHideSettingChange : function() {
-      if (t) {
-        if (!IS_MOBILE) {
-          if (SETTINGS.auto_hide_left_bar.value) {
-            m();
-          } else {
-            j(true);
-          }
-          getActivePage().setPositionAndDimensionsForPage();
-          n();
-          o();
-        }
-      }
-    },
-    notifyMayNeedToUpdate : o,
-    notifyLocationChanged : function() {
-      o();
-    },
-    locationIsPresentInNonRecentSection : u,
-    inRecentSwitcherMode : function() {
-      return M;
-    },
-    updateRecentSwitcherModifierKeyStatus : function(H, K) {
-      var P = !ba && !ga;
-      ba = H;
-      ga = K;
-      if (M) {
-        var Q = !ba && !ga;
-        if (!P) {
-          if (Q) {
-            s();
-          }
-        }
-      }
-    },
-    moveRecentSwitcherSelectionUp : function() {
-      w("up");
-    },
-    moveRecentSwitcherSelectionDown : function() {
-      w("down");
-    },
-    switchToRecentSwitcherSelection : s,
-    toggleVisibility : function() {
-      j(!E);
     }
   };
 }();
