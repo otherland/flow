@@ -183,8 +183,6 @@
   <script src="{% static 'js/md5-min.js' %}" type="text/javascript" ></script>
   <script src="{% static 'js/underscore-min.js' %}" type="text/javascript" ></script>
 
-  <script src="{% static 'js/react-and-react-dom-15.0.0.min.js' %}" type="text/javascript" ></script>
-
   <script src="{% static 'js/document_view.js' %}" type="text/javascript" ></script>
 
   <style>
@@ -299,19 +297,7 @@
 
 </head>
 
-
   <body class="">
-
-    <div id="loginScreen" style="display: none;">
-      <div class="centerBox">
-        <div class="form loginScreen">
-          <form id="loginForm" class="loginForm" name="loginForm" method="post">
-            <input id="id_password" type="password" placeholder="Password" name="password" required>
-            <input type="submit" class="submit" value="Login">
-          </form>
-        </div>
-      </div>
-    </div>
 
     <div id="loadingScreen" style="z-index: 1000; position: absolute; top: 0; left: 0; background: white; width: 100%; height: 100%; display: none;">
       <div id="loadingScreenDisplayBox" style="position: fixed; top: 40%; left: 50%; width: 200px; margin-top: -30px; margin-left: -100px; text-align: center;">
@@ -336,7 +322,6 @@
           </div>
         </form>
 
-
         <div class="saveButton button">
           <div class="topBarButtonTextContainer">
             <span class="saveButton_saveNow">Save now</span>
@@ -345,19 +330,13 @@
           </div>
         </div>
 
-
         <div class="showCompletedButton button">
           <div class="topBarButtonTextContainer">
             Completed: <span class="show">Hidden</span><span class="hide hidden">Visible</span>
           </div>
         </div>
 
-
-
         <div id="savedViewHUDButton" class="button" title="Show starred pages"></div>
-
-
-
 
         <div class="redo-button" title="Redo (Control + Shift + Z)">
           <div class="icon redo-icon">
@@ -368,10 +347,7 @@
           </div>
         </div>
 
-
-
       </div>
-
 
       <div id="pageContainer"></div>
 
@@ -386,7 +362,6 @@
         show up here. Each starred page remembers its zoom level
         and search (if any).
       </div>
-      </script>
 
 
       <div id="fixedPageBottomMessages">
@@ -396,7 +371,7 @@
       </div>
 
 
-      <script id="exportPopupTemplate" type="text/x-inert-html">
+      <div id="exportPopupTemplate" style="display:none;">
         <div class="htmlContainer" style="display:none"></div>
         <div class="textContainer" style="display:none"></div>
         <div class="opmlContainer" style="display:none"></div>
@@ -420,7 +395,7 @@
           your list. You can paste it anywhere.
           <span class="downloadText" style="display: none;"><br />(Or <a class="downloadLink">click to download</a>.)</span>
         </div>
-      </script>
+      </div>
 
       <div id="keyboardShortcutHelper" class="ui-dialog">
         <div class="title ui-dialog-titlebar ui-widget-header">
@@ -604,7 +579,7 @@
 
       <div id="exportPopup" class="popup"></div>
 
-      <script id="sharePopupTemplate" type="text/x-inert-html">
+      <div id="sharePopupTemplate" style="display:none;">
         <div class='sharePopupContentsContainer'>
 
           <div class="share_prompt">
@@ -707,7 +682,7 @@
           </div>
 
         </div>
-      </script>
+      </div>
 
       <div id="sharePopup" class="popup"></div>
 
@@ -722,694 +697,8 @@
         </div>
       </div>
 
-      <div id="loginPopup" class="popup"></div>
-
-      <div id="helpWindow" style="display:none;">
-        <div id="helpRadio">
-          <span id="video" class="current" data-pane="videos">How-to</span>
-          <span id="keyboardShortcuts" data-pane="shortcuts">Commands</span>
-          <span id="questions" data-pane="questions">Support</span>
-        </div>
-
-
-        <div id="libraryContainer" class="pane videos">
-          <div class="contents">
-            <div id="currentBook">
-              <div class="bookName"></div>
-              <div class="videoPlayer">
-                <div id="videoLibraryPlayer"></div>
-                <div id="afterLibraryVideoCompleteBox">
-                  <div id="nextVideoButton" class="fancyButton">
-                    Next Video &raquo;
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div id="bookList">
-              <h3>Videos</h3>
-              <div class="content"></div>
-            </div>
-            <div style="clear:both;"></div>
-          </div>
-        </div>
-
-
-        <div id="howTo" class="pane shortcuts" style="display:none;">
-          <div class="darkPaddedContainer">
-            <label for="keyboardShortcutHelperCheckboxHowTo">Help me learn the keyboard shortcuts:</label>
-            <input type="checkbox" id="keyboardShortcutHelperCheckboxHowTo" name="keyboardShortcutHelper" class="keyboardShortcutHelper" value="keyboardShortcutHelper" />
-          </div>
-
-          <table>
-            <tr>
-              <td class="commandName">Add and edit</td>
-              <td class="commandDescription">Type just as you would in a text editor or word processor. Press <em>Enter</em> to add new items.</td>
-            </tr>
-            <tr>
-              <td class="commandName">Show controls</td>
-              <td class="commandDescription">
-                Hover over the bullet of an item.
-              </td>
-            </tr>
-            <tr>
-              <td class="commandName">Zoom</td>
-              <td class="commandDescription">
-                Zoom in: Click the bullet of an item.
-                <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Alt + Right</span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984; + &gt;</span></em> )
-
-                <br /><br />
-
-                Zoom out: Click on the WorkFlowy logo to fully zoom out. Click on individual ancestor items to zoom to them.
-                <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Alt + Left</span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984; + &lt;</span></em> )
-              </td>
-            </tr>
-            <tr>
-              <td class="commandName">Expand / collapse</td>
-              <td class="commandDescription"> Click the '+' or '-' that appears when you hover over an item. Double click it to expand all.  To expand all of the zoomed item, double click its name. Double click the WorkFlowy logo to expand all your lists.
-                <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + Down/Up</em> )</td>
-              </tr>
-              <tr>
-                <td class="commandName">Change indent</td>
-                <td class="commandDescription">
-                  Increase indent: <em>Tab</em>
-                  <br /><br />
-                  Decrease indent: <em>Shift + Tab</em>
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Move</td>
-                <td class="commandDescription">
-                  Drag and drop an item's bullet point.
-                  <br /> ( Shortcut: <em><span class="showOnWindows showOnLinux">Alt</span><span class="showOnChromeOS">Control</span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + Shift + Up/Down</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Add a note </td>
-                <td class="commandDescription">
-                  Click "Add Note" in the item controls.
-                  <br />( Shortcut: <em>Shift + Enter</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Complete</td>
-                <td class="commandDescription">
-                  Click "Complete" in the item controls.
-                  <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + Enter</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Delete</td>
-                <td class="commandDescription">
-                  Click "Delete" in the item controls.
-                  <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + Shift + <span class="showOnWindows showOnLinux showOnChromeOS">Backspace</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">Delete</span></em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Search</td>
-                <td class="commandDescription">
-                  Type in the search box that's in the top bar. Click the "x" that appears in the box to exit search mode.
-                  <br />( Shortcut: <em>Escape</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Select multiple items</td>
-                <td class="commandDescription">
-                  Click and drag across multiple items to select
-                  them. Use the controls that pop up to manipulate them,
-                  or the normal keyboard shortcuts. Selected items can
-                  also be moved and cut, copied, and pasted.
-                  <br />( Selection shortcuts: <em>Shift + Up/Down, Shift + click, <span class="showOnWindows showOnLinux">Alt</span><span class="showOnChromeOS">Control</span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + click</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Show/hide completed items</td>
-                <td class="commandDescription">
-                  Click the button in the top bar.
-                  <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + O</em> )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Star and switch pages</td>
-                <td class="commandDescription">
-                  Click the star in the top right of the page to star the current page.
-                  <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + Shift + <span class="commandAsterisk">&lowast;</span></em> )
-                  <br /><br />
-                  Click the starred-page button in the top bar to show the list of starred pages. Click one to switch.
-                  <br />( Shortcut: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + ;</em> ) (Hold <span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> while repeatedly pressing ';' to select a page.)
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Bold / italic / underline</td>
-                <td class="commandDescription">
-                  Highlight text and use shortcuts below to toggle formatting, or use shortcuts while typing.
-                  <br />( Shortcuts: <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + B/I/U</em> for Bold/Italic/Underline )
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Share and Collaborate</td>
-                <td class="commandDescription">
-                  Click "Share" in the item controls to share or
-                  collaborate over a sublist with others.
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Duplicate</td>
-                <td class="commandDescription">
-                  Click "Duplicate" in the item controls to duplicate a
-                  list. The duplicate copy will appear immediately below
-                  the original.
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Export</td>
-                <td class="commandDescription">
-                  Click "Export" in the item controls, then copy the
-                  text of your list to another program of your
-                  choice. To export all of your lists, click "Export
-                  All" in the top-right menu.
-                </td>
-              </tr>
-              <tr>
-                <td class="commandName">Show keyboard shortcuts</td>
-                <td class="commandDescription">
-                  <em><span class="showOnWindows showOnLinux showOnChromeOS">Control</span></span><span class="hideOnWindows hideOnLinux hideOnChromeOS">&#8984;</span> + ?</em>
-                </td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="pane questions" style="display:none;">
-            <div id="faq">
-              <h1>
-                WorkFlowy Support
-              </h1>
-              <p class="proOnly">As a Pro member, you get premium support: <strong>prohelp@workflowy.com</strong></p>
-              <p>
-              Please visit our <a href="http://workflowy.zendesk.com" target="_blank">customer support portal</a> to ask a question and view answers to common questions.
-            </p>
-            <a href="http://workflowy.zendesk.com" target="_blank" class="fancyButton big">Get Support</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rating & Recommendation Dialog -->
-
-      <div id="ratingDialog" style="display:none;">
-        <div id="rateWithStars">
-          <!-- The stars are nested to enable appropriate css based filling of the stars on hovering (ie: hover over the second star, it and the first should both be filled in.  -->
-            <p id="promptText">
-              Please click a star to rate WorkFlowy.
-            </p>
-            <div class="rating low" data-rating="low">
-              <div class="star"><p>It kinda stinks.</p></div>
-              <div class="rating med" data-rating="med">
-                <div class="star"><p>It's okay.</p></div>
-                <div class="rating high" data-rating="high">
-                  <div class="star"><p>I love it!</p></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p id="promptContext"></p>
-        </div>
-
-        <script id="post-rating-dialog-text" type="text/x-inert-html">
-          <p style="padding:10px; margin: 10px 0; background:#ffc; border-radius:5px; border: 1px solid #dda;">
-            <strong>We'll give you both 250 more monthly WorkFlowy items when a friend signs up through your Facebook post</strong>.
-            <br />
-            <small style="font-size:11px;"> You currently have <span class="quotaMonthlyItems">0</span> WorkFlowy items per month.
-            </small>
-          </p>
-        </script>
-        <!-- End Rating & Recommendation Dialog -->
-
-
-        <!-- Payments dialog -->
-
-        <div id="plan-upgrade-dialog">
-          <div id="payment-wrapper">
-            <div id="payment-succeeded" style="display:none;">
-
-              <div class="freeOnly">
-                <h1>
-                  You've successfully joined WorkFlowy Pro!
-                </h1>
-                <p>
-                  To activate your subscription, just reload WorkFlowy.
-                </p>
-                <div class="fancyButton reloadButton">
-                  Reload WorkFlowy Now
-                </div>
-              </div>
-
-              <div class="proOnly">
-                <h1>
-                  You've updated your payment details.
-                </h1>
-              </div>
-
-            </div>
-            <div id="payment-page">
-
-              <div class="freeOnly">
-                <div id="payment-header">
-                  <p id="pro-thank-you-paragraph">
-                    Thanks for joining WorkFlowy Pro! Your purchase keeps WorkFlowy running and lets us make it better.
-                  </p>
-                </div>
-                <div id="about-wf-pro">
-                  <h3>Why should you upgrade?</h3>
-                  <div id="premium-features-description">
-                    <ol>
-                      <li>
-                        Unlimited Lists
-                        <small>
-                          Pro users can make as many lists and items as they want. Non-pro users are limited to <span class="js-base-quota"></span> per month.
-                        </small>
-                      </li>
-                      <li>
-                        Backup to Dropbox
-                        <small>
-                          Never worry about losing your WorkFlowy data. Have full backups automatically uploaded to your Dropbox account every day.
-                        </small>
-                      </li>
-                      <li>
-                        Password Protected Collaboration
-                        <small>
-                          Pro users can share parts of their WorkFlowy account with specific people, verified by email address and password.
-                        </small>
-                      </li>
-                      <li>
-                        Theme and Fonts
-                        <small>
-                          Pro users get to change the look and feel of WorkFlowy with a library of themes and fonts. Make your WorkFlowy more personal.
-                        </small>
-                      </li>
-                      <li>
-                        Premium Support
-                        <small>
-                          We answer emails from Pro members first.
-                        </small>
-                      </li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-
-              <div id="purchase-info">
-
-                <form id="stripe-form" style="display: none;" data-freeaction="/plan" data-proaction="/change_card">
-                  <p class="globalerror" style="display:none;">
-                    <b>There was an error processing your card. Please refresh the page and try again.</b> If you are having repeated trouble upgrading your account, please contact <a href='mailto:billing@workflowy.com'>billing@workflowy.com</a>
-                  </p>
-
-                  <div class="freeOnly">
-                    <h3>Your Plan</h3>
-                    <div id="choose-your-plan">
-                      <div id="individualPlan" class="paymentPlan">
-                        <div class="detailsBox">
-
-                          <input type="radio" name="plan" value="monthly_5"  id="monthly_5"> <label for="monthly_5">$4.99 per month</label> <br>
-
-                          <input type="radio" name="plan" value="yearly_50" checked id="yearly_50"> <label for="yearly_50">$49 per year (~20% off)</label> <br>
-
-                        </div>
-                      </div>
-      <div class="pro-dialog-teams-link">Work in an organization? Save 20% with <a href="https://workflowy.com/teams/" target="_blank">WorkFlowy For Teams</a></div>
-    </div>
-    <h3>Credit Card Info</h3>
-  </div>
-
-  <div class="payment-form">
-    <table>
-      <tbody>
-
-        <tr class="form-row">
-          <td>
-            <label>We Accept</label>
-          </td>
-          <td>
-            <img src="{% static 'i/cards.png' %}" id="cards-accepted">
-          </td>
-        </tr>
-
-        <tr class="form-row">
-          <td>
-            <label for="name" class="stripeLabel">Cardholder's name</label>
-          </td>
-          <td>
-            <input type="text" name="name" class="required text" />
-          </td>
-        </tr>
-
-        <tr class="form-row">
-          <td>
-            <label>Card Number</label>
-          </td>
-          <td>
-            <input type="text" maxlength="20" autocomplete="off" class="card-number stripe-sensitive required text" />
-          </td>
-        </tr>
-        <tr class="form-row">
-          <td>
-            <label>Expiration date</label>
-          </td>
-          <td>
-            <div class="expiry-wrapper">
-              <select class="card-expiry-month stripe-sensitive required"></select>
-              <span> / </span>
-              <select class="card-expiry-year stripe-sensitive required"></select>
-            </div>
-          </td>
-        </tr>
-
-        <tr class="form-row">
-          <td>
-            <label>Security code</label>
-          </td>
-          <td>
-            <input type="text" maxlength="4" autocomplete="off" class="card-cvc stripe-sensitive required" />
-          </td>
-        </tr>
-
-        <tr class="form-row submit-row">
-          <td>
-            <label>
-              <img src="{% static 'i/padlock.png' %}" class="padlock" />
-            </label>
-          </td>
-          <td>
-
-            <button type="submit" name="submit-button" class="fancyButton submit_button freeOnly">Upgrade Account</button>
-            <button type="submit" name="submit-button" class="fancyButton submit_button proOnly">Submit New Card</button>
-          </td>
-        </tr>
-
-      </tbody>
-    </table>
-  </div>
-  <span class="payment-errors"></span>
-
-</form>
-</div>
-</div>
-<div style="clear:both;"></div>
-
-</div>
-</div>
-<!-- End Payments dialog -->
-
-
-
-
-<div id="overQuotaDialog" class="overQuotaDialog" style="display:none;">
-  <p>
-    You've reached your monthly usage quota of <span class="quotaMonthlyItems">0</span> items. To continue adding items, please upgrade to WorkFlowy Pro.
-  </p>
-  <div class="upgrade-button fancyButton">
-    Join WorkFlowy Pro
-  </div>
-</div>
-
-<div id="sharedOverQuotaDialog" class="overQuotaDialog" style="display:none;">
-  <p>
-    The owner of the document you're editing has reached their free monthly usage quota. To add more items, they must upgrade to WorkFlowy Pro or earn more space.
-  </p>
-</div>
-
-
-
-<div id="pro_welcome_dialog" style="padding: 20px; display: none" class="proOnly">
-  <div class="videoPlaceholder" data-style="width:560px;height:315px;" data-src="https://www.youtube.com/embed/tCCiwQura1A?rel=0&amp;showinfo=0&amp;wmode=transparent&amp;fs=0"></div>
-  <p>
-    Watch the video above for an intro to WorkFlowy Pro.
-  </p>
-</div>
-
-
-
-<img class="proPitch freeOnly" id="proPitchBottomRight" src="{% static 'i/go-pro.png' %}" />
-
-<div id="proPitchDialog" class="hidden freeOnly">
-  <div class="videoPlaceholder" data-style="width:400px;height:220px;" data-src="https://www.youtube.com/embed/2J3SqpAKjKw?rel=0&amp;showinfo=0&amp;controls=1&amp;wmode=transparent&amp;fs=0"></div>
-  <div class="fancyButton big upgrade-button" style="margin-top:10px;">
-    Learn more &raquo;
-  </div>
-</div>
-
-
-<div id="getMoreSpaceDialog" class="hidden">
-  <p>
-    You can currently create <span class="quotaMonthlyItems">0</span> WorkFlowy items per month. There are two ways to get more space.
-  </p>
-  <div class="bigSquareButton referralButton hoverHand">
-    <h1>
-      Tell people about WorkFlowy
-    </h1>
-    <p>
-      For every person who you tell about WorkFlowy, we'll give you both 250 more monthly items. <a href="#" class="referralButton">Tell people &raquo;</a>
-    </p>
-  </div>
-  <div class="bigSquareButton upgrade-button hoverHand">
-    <h1>
-      Upgrade to WorkFlowy Pro
-    </h1>
-    <p>
-      WorkFlowy Pro lets you create unlimited items, and also comes with a bunch of other cool stuff. <a href="#" class="upgrade-button">Learn More &raquo;</a>
-    </p>
-  </div>
-</div>
-
-<div id="deleteAccountDialog" style="display:none;">
-  <p class="deleteWarning">
-    If you enter your password below, and submit the form, it will permanently delete your account, all lists you've created, and all associated data. This cannot be undone, so do it with care.
-  </p>
-  <script id="deleteAccountFormTemplate" type="text/janky-template">
-    <form id="deleteAccountConfirmation" method="POST" action="/delete_account">
-      <label for="deleteAccountPasswordConfirmation">Password: </label>
-      <input id="deleteAccountPasswordConfirmation" name="delete_password" type="password" />
-    </form>
-  </script>
-</div>
-
-<div id="team-dialog"></div>
-
-<div id="ios-browser-editing-notice" style="display:none;">
-  <p>
-    <strong>Warning:</strong> Your browser does not fully support editing in WorkFlowy. If you edit this document, you may notice a few glitches.
-  </p>
-  <div  class="install-app-section" style="display:none;">
-    <p>
-      To get full offline access and other goodies, install the WorkFlowy iOS app.
-    </p>
-    <p>
-      <div class="fancyButton">
-        <a style="text-decoration:none; color:#4f4f4f;" href="https://itunes.apple.com/us/app/workflowy/id551139514?mt=8&amp;uo=4" target="itunes_store">Install App</a>
-      </div>
-    </p>
-  </div>
-</div>
-
-
-
-<div class="weekly-report" style="display:none;">
-  <h1 class="weekly-report__headline">Your Past Week</h1>
-  <small>You've used WorkFlowy for <span class="js-weekly-report__weeks-active">&hellip;</span>.</small>
-  <ul class="weekly-report__list">
-    <li class="weekly-report__item">
-      <b>Bullets Created:</b> <span class="js-weekly-report__created">&hellip;</span>
-    </li>
-    <li class="weekly-report__item">
-      <b>Bullets Changed:</b> <span class="js-weekly-report__changed">&hellip;</span>
-      <a class="weekly-report__filter-link" data-query="last-changed:7d" href="#/?q=last-changed:7d"></a>
-    </li>
-    <li class="weekly-report__item">
-      <b>Bullets Completed:</b> <span class="js-weekly-report__completed">&hellip;</span>
-      <a class="weekly-report__filter-link" data-query="completed:7d" href="#/?q=completed:7d"></a>
-    </li>
-    <li class="weekly-report__item">
-      <b>Total Bullets:</b> <span class="js-weekly-report__total">&hellip;</span>
-    </li>
-    <li class="weekly-report__item">
-      <b>Total Shared:</b> <span class="js-weekly-report__shared">&hellip;</span>
-      <a class="weekly-report__filter-link" data-query="is:shared" href="#/?q=is:shared"></a>
-    </li>
-    <li class="weekly-report__item">
-      <b>Total Embedded:</b> <span class="js-weekly-report__embedded">&hellip;</span>
-      <a class="weekly-report__filter-link" data-query="is:embedded" href="#/?q=is:embedded"></a>
-    </li>
-
-    <li class="weekly-report__item">
-      <b>Total Referrals:</b> <span class="js-weekly-report__referrals">&hellip;</span>
-      <a class="weekly-report__filter-link" href="/referrals/" target="_blank"></a>
-    </li>
-  </ul>
-  <small class="weekly-report__support">
-    <span class="freeOnly">
-      We hope WorkFlowy improves your life. If it does, please consider supporting the team by <a class="weekly-report__support-link " href="/referrals/" target="_blank">recommending us</a>, or <a class="weekly-report__support-link upgrade-button" href="#">upgrading</a>.
-    </span>
-    <span class="proOnly">
-      Thanks for supporting WorkFlowy as a Pro member! Want to support us even more? <a class="weekly-report__support-link " href="/referrals/" target="_blank">Recommend us</a> to a friend.
-    </span>
-  </small>
-</div>
-
-
-
-</div>
-
-<div id="settingsPopup" class="popup">
-
-  <div id="settingsRight">
-
-    <div id="settingsQuotaInfo" class="progressBarContainer freeOnly">
-      <h2>Current Monthly Usage</h2>
-
-      <div class="quotaProgressBar progressBar">
-        <div class="currentProgress">
-        </div>
-      </div>
-      <div>
-        <span class="link free_items">Get Free Space</span>
-      </div>
-      <div class="quotaDetailedInformation">
-        You've used <span class="quotaUsedThisMonth">0</span> of <span class="quotaMonthlyItems">0</span> monthly items.<br />
-        For more space, upgrade to <a class="upgrade-button link">WorkFlowy&nbsp;Pro</a> or <span class="link free_items">Get Free Space</span>
-      </div>
     </div>
 
-    <div id="settings">
-      <div class="setting">
-
-        <div class="gallerySelector" id="themeChooser">
-          Theme: <div id="currentTheme" class="fancyButton galleryShowButton"></div>
-          <div id="theme-gallery" class="gallery">
-            <span class="closeMeButton themeCloseButton"></span>
-            <div id="theme-scroller" class="galleryScroller"></div>
-            <div id="theme-pro-notice" class="galleryProNotice">
-              <p>
-                To use this theme you must upgrade to WorkFlowy Pro.<br>
-                <a class="upgrade-button">Upgrade Now &raquo;</a>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="gallerySelector" id="fontChooser">
-          Font: <div id="currentFont" class="fancyButton galleryShowButton"></div>
-          <div id="font-gallery" class="gallery">
-            <div id="font-scroller" class="galleryScroller"></div>
-            <div id="font-pro-notice" class="galleryProNotice">
-              <p>
-                <a class="upgrade-button">Go Pro &raquo;</a>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <div class="setting">
-        <label for="keyboardShortcutHelperCheckboxSettings">Help me learn the keyboard shortcuts:</label>
-        <input type="checkbox" id="keyboardShortcutHelperCheckboxSettings" name="keyboardShortcutHelper" class="keyboardShortcutHelper" value="keyboardShortcutHelper" />
-      </div>
-
-
-      <div class="setting">
-        <label for="summaryEmailsCheckboxSettings">Send email summaries of changes to my account:</label>
-        <input type="checkbox" id="summaryEmailsCheckboxSettings" name="summaryEmails" value="summaryEmails" />
-      </div>
-
-      <div class="setting proOnly">
-        <label for="backupToDropbox">Auto-backup my WorkFlowy to Dropbox:</label>
-        <input type="checkbox" id="backupToDropbox" name="dropbox_backup" />
-      </div>
-
-      <div class="setting chromeAppOnly" style="display:none;">
-        <label>Opt out of anonymous usage tracking
-          <input type="checkbox" class="js-chrome-app-no-track" id="chromeAppNoTrack" />
-        </label>
-      </div>
-
-      <div id="accountInfo">
-        <div>
-          Account: <span id="currentEmailAddress" class="userEmail"></span>
-        </div>
-        <span id="changeEmailLink" class="smallSettingsButton">
-          <span class="cancel">Cancel</span> <span class="text">Change email</span>
-        </span>
-        <form method="POST" action="/change_email" id="changeEmailForm" style="display:none;">
-          <div>
-            <label for="email">New email:</label><br>
-            <input type="text" name="email" value="" />
-          </div>
-          <div>
-            <label for="email2">Confirm new email:</label><br>
-            <input type="text" name="email2" value="" />
-          </div>
-          <div>
-            <label for="password">Current Password:</label><br>
-            <input type="password" name="password" value="" />
-          </div>
-          <input class="submit fancyButton" type="submit" value="Change Email" />
-        </form>
-
-        <span id="changePasswordLink" class="smallSettingsButton" >
-          <span class="cancel">Cancel</span> <span class="text">Change password</span>
-        </span>
-        <form method="POST" action="/change_password" id="changePasswordForm" style="display:none;">
-          <div>
-            <label for="old_password">Current Password:</label><br>
-            <input type="password" name="old_password" value="" />
-          </div>
-          <div>
-            <label for="new_password1">New Password:</label><br>
-            <input type="password" name="new_password1" value="" />
-          </div>
-          <div>
-            <label for="new_password2">Confirm New Password:</label><br>
-            <input type="password" name="new_password2" value="" />
-          </div>
-          <input class="submit fancyButton" type="submit" value="Change Password" />
-        </form>
-
-
-
-        <span id="deleteAccountLink" class="smallSettingsButton">
-          <span class="text">Delete my account</span>
-        </span>
-
-      </div>
-
-    </div>
-    <div style="clear:both;"></div>
-  </div>
-
-
-  <div class="offline-export-dialog" style="display:none">
-    <p>If you are having trouble syncing, follow these instructions.</p>
-
-    <p>1. Copy the exported data below to your clipboard</p>
-    <textarea class="exported-offline-data"></textarea>
-    <p>2. Email the data to help@workflowy.com</p>
-    <a href="mailto:help@workflowy.com" target="_blank" class="fancyButton big offline-export-email-button">Email Your Data</a>
-  </div>
-
-  <div id="autocompleteBox"></div>
-
-  <div id="contentHtmlContainer"></div>
-
-  <div id="loginPopupContents">
-    <form class="loginForm" name="loginForm" method="post">
-      <input type="hidden" name="username" value="" />
-      <div class="loginFormErrorMessage"></div>
-      <label for="password" class="loginFormLabel">Enter your password:</label> <input class="loginFormPasswordInput" type="password" name="password" />
-    </form>
-    <a href="/accounts/password_reset/" class="loginFormForgotPasswordLink" target="_blank">Forgot your password?</a>
-    <a class="logout" style="text-align:right; display:block; margin-top:10px;">Login with a different account</a>
-  </div>
-
-</div>
 
 </body>
 </html>
