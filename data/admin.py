@@ -5,6 +5,6 @@ from .models import *
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ('user','id','parent','priority','modified')
     list_filter = ('deleted','complete')
-
+    search_fields = ('id', 'name', 'parent')
 
 admin.site.register(Project, ProjectAdmin)
