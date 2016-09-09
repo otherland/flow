@@ -54,7 +54,7 @@ class Project(models.Model):
 			return self.parent.children.all()
 
 	def __str__(self):
-		return "{}: {}".format(self.name, self.id)
+		return u"%s" % (self.id)
 
 
 
