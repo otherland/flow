@@ -181,7 +181,7 @@ def update_project(sender, instance, **kwargs):
 		if instance.deleted != None and old.deleted == None:
 			# newly deleted, set deleted on children
 			# need to implement
-			delete_children(instance)
+			delete_children(instance, instance.deleted)
 		elif instance.deleted == None and old.deleted != None:
 			undelete_children(instance)
 
