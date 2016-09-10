@@ -16,15 +16,12 @@ logger = logging.getLogger('django')
 User = settings.AUTH_USER_MODEL
 
 
-def generate_referral():
-	pass
-
 class ProjectManager(models.Manager):
-		def get_queryset(self):
-			return super(ProjectManager, self).get_queryset().filter(deleted__isnull=True)
+	def get_queryset(self):
+		return super(ProjectManager, self).get_queryset().filter(deleted__isnull=True)
 
-		def deleted(self):
-			return super(ProjectManager, self).get_queryset().exclude(deleted__isnull=True)
+	def deleted(self):
+		return super(ProjectManager, self).get_queryset().exclude(deleted__isnull=True)
 
 class Project(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,30 +56,29 @@ class Project(models.Model):
 
 
 class UserProfile(models.Model):
-		FONT_CHOICES = enumerate([
-			'default',
-		])
-		THEME_CHOICES = enumerate([
-			'default',
-		])
-		user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-		# referral = models.CharField(default=generate_referral(), max_length=255)
-		public_key = models.TextField(blank=True)
-		private_key = models.TextField(blank=True)
+	FONT_CHOICES = enumerate([
+		'default',
+	])
+	THEME_CHOICES = enumerate([
+		'default',
+	])
+	user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+	public_key = models.TextField(blank=True)
+	private_key = models.TextField(blank=True)
 
-		monthly_item_quota = models.PositiveIntegerField(default=5000)
-		created = models.DateTimeField(auto_now=True)
-		auto_hide_left_bar = models.BooleanField(default=False)
-		backup_to_dropbox = models.BooleanField(default=False)
-		show_completed = models.BooleanField(default=True)
-		show_keyboard_shortcuts = models.BooleanField(default=False)
-		font = models.PositiveIntegerField(default=0, choices=FONT_CHOICES)
-		theme = models.PositiveIntegerField(default=0, choices=THEME_CHOICES)
-		unsubscribe_from_summary_emails = models.BooleanField(default=True)
-		saved_views_json = JSONField(default=list)
+	monthly_item_quota = models.PositiveIntegerField(default=5000)
+	created = models.DateTimeField(auto_now=True)
+	auto_hide_left_bar = models.BooleanField(default=False)
+	backup_to_dropbox = models.BooleanField(default=False)
+	show_completed = models.BooleanField(default=True)
+	show_keyboard_shortcuts = models.BooleanField(default=False)
+	font = models.PositiveIntegerField(default=0, choices=FONT_CHOICES)
+	theme = models.PositiveIntegerField(default=0, choices=THEME_CHOICES)
+	unsubscribe_from_summary_emails = models.BooleanField(default=True)
+	saved_views_json = JSONField(default=list)
 
 class Transaction(models.Model):
-		user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
+	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
 
 
 
@@ -120,11 +116,17 @@ def get_tree(user_id):
 	# I'm a child, store my id on my parent with my siblings' ids
 	for key in flat:
 		project = flat[key]
-		parentid = project.get('parent_id', None)
+		parentid = project.get('parent_id')
 		if not parentid:
 			continue
-		if flat.get(parentid, False) != False:
-			flat[parentid].setdefault('children',[]).append(key)
+		if parentid in flat:
+			parent = flat[parentid]
+			try:
+				# add the current projectid to parent's children
+				parent.setdefault('children',[]).append(key)
+			except AttributeError:
+				from IPython import embed; embed();
+				import sys; sys.exit()
 		else:
 			flat[key] = None
 
@@ -156,15 +158,32 @@ def disable_for_loaddata(signal_handler):
         signal_handler(*args, **kwargs)
     return wrapper
 
+def delete_children(project, timestamp):
+	for child in project.children.all():
+		delete_children(child, timestamp)
+	project.children.update(deleted=timestamp)
+
+def undelete_children(project):
+	children = Project.objects.deleted().filter(parent_id=project.id)
+	for child in children:
+		undelete_children(child)
+	children.update(deleted=None)
 
 @disable_for_loaddata
 @receiver(pre_save, sender='data.Project')
-def update_sibling_priority(sender, instance, **kwargs):
+def update_project(sender, instance, **kwargs):
 
 	siblings = instance.siblings
 	try:
 		# updating
 		old = Project.objects.get(pk=instance.id)
+
+		if instance.deleted != None and old.deleted == None:
+			# newly deleted, set deleted on children
+			# need to implement
+			delete_children(instance)
+		elif instance.deleted == None and old.deleted != None:
+			undelete_children(instance)
 
 		if instance.parent_id != old.parent_id:
 				"""
@@ -183,7 +202,6 @@ def update_sibling_priority(sender, instance, **kwargs):
 				"""
 				siblings = siblings.filter(priority__gte=instance.priority)
 				siblings.update(priority=models.F('priority')+1)
-
 
 		elif instance.priority < old.priority:
 				"""
@@ -206,7 +224,6 @@ def update_sibling_priority(sender, instance, **kwargs):
 				"""
 				siblings = siblings.filter(priority__gt=old.priority, priority__lte=instance.priority)
 				siblings.update(priority=models.F('priority')-1)
-
 
 
 	except Project.DoesNotExist:
