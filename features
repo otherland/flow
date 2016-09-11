@@ -1,0 +1,24 @@
+Todo:
+
+
+
+
+Features:
+notifications
+  edited
+  item due
+saved searches
+link to node
+Night mode.
+Easier tagging and filter by tag
+  Tag as Hidden, Completed, Deleted, Importance, Edited (by collaborator) and filter accordingly.
+Better search
+Sort-by attributes
+Lazy loading large amounts of data
+Overview window (like in sublime )
+jump up and down siblings
+lock nodes, to prevent them from being modified, this would create node-tree-templates, which can be used collaboritvely.
+Email to Workflowy.
+  Subject is node name
+  Email paragraphs individual items.
+  Accept emails via [username.listname@workflowy.com]
