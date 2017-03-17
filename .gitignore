@@ -4,3 +4,7 @@ staticfiles
 .env
 .sqlite3
 .sql
+node_modules
+.DS_Store
+bundle.js
+*.log
